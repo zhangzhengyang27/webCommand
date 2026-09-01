@@ -1,0 +1,45 @@
+{
+  "name": "webcommand-nuxt",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "webCommand 前后端合并工程（Nuxt 4 SPA + Nitro API）",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "node .output/server/index.mjs",
+    "generate": "nuxt generate",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^1.0.2",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/xterm": "^6.0.0",
+    "ant-design-vue": "^4.2.6",
+    "axios": "^1.18.1",
+    "bcryptjs": "^2.4.3",
+    "dayjs": "^1.11.23",
+    "getopts": "^2.3.0",
+    "lodash": "^4.18.1",
+    "md5": "^2.3.0",
+    "mysql2": "^3.24.2",
+    "nodemailer": "^6.10.1",
+    "nuxt": "^4.5.2",
+    "nuxt-auth-utils": "^0.5.30",
+    "pinia": "^2.3.1",
+    "pinia-plugin-persistedstate": "^3.2.3",
+    "sequelize": "^6.37.8",
+    "vue": "^3.5.40",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/lodash": "^4.17.24",
+    "@types/md5": "^2.3.5",
+    "@types/node": "^22.15.0",
+    "@types/nodemailer": "^6.4.17",
+    "typescript": "^5.9.3",
+    "unplugin-vue-components": "^32.1.0"
+  }
+}

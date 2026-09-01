@@ -1,0 +1,82 @@
+[
+  {
+    "name": "GruvboxDark",
+    "background": "#282828",
+    "foreground": "#ebdbb2",
+    "prompt": "#b8bb26",
+    "success": "#b8bb26",
+    "error": "#fb4934",
+    "warning": "#fabd2f",
+    "link": "#83a598"
+  },
+  {
+    "name": "Dracula",
+    "background": "#282a36",
+    "foreground": "#f8f8f2",
+    "prompt": "#50fa7b",
+    "success": "#50fa7b",
+    "error": "#ff5555",
+    "warning": "#f1fa8c",
+    "link": "#8be9fd"
+  },
+  {
+    "name": "Nord",
+    "background": "#2e3440",
+    "foreground": "#d8dee9",
+    "prompt": "#a3be8c",
+    "success": "#a3be8c",
+    "error": "#bf616a",
+    "warning": "#ebcb8b",
+    "link": "#88c0d0"
+  },
+  {
+    "name": "SolarizedDark",
+    "background": "#002b36",
+    "foreground": "#839496",
+    "prompt": "#859900",
+    "success": "#859900",
+    "error": "#dc322f",
+    "warning": "#b58900",
+    "link": "#268bd2"
+  },
+  {
+    "name": "SolarizedLight",
+    "background": "#fdf6e3",
+    "foreground": "#657b83",
+    "prompt": "#859900",
+    "success": "#859900",
+    "error": "#dc322f",
+    "warning": "#b58900",
+    "link": "#268bd2"
+  },
+  {
+    "name": "OneDark",
+    "background": "#282c34",
+    "foreground": "#abb2bf",
+    "prompt": "#98c379",
+    "success": "#98c379",
+    "error": "#e06c75",
+    "warning": "#e5c07b",
+    "link": "#61afef"
+  },
+  {
+    "name": "Monokai",
+    "background": "#272822",
+    "foreground": "#f8f8f2",
+    "prompt": "#a6e22e",
+    "success": "#a6e22e",
+    "error": "#f92672",
+    "warning": "#e6db74",
+    "link": "#66d9ef"
+  },
+  {
+    "name": "TokyoNight",
+    "background": "#1a1b26",
+    "foreground": "#a9b1d6",
+    "prompt": "#9ece6a",
+    "success": "#9ece6a",
+    "error": "#f7768e",
+    "warning": "#e0af68",
+    "link": "#7aa2f7"
+  }
+]
