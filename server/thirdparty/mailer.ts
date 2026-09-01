@@ -24,14 +24,9 @@ export function isMailConfigured(): boolean {
   return !!getTransporter()
 }
 
-export async function sendMail(opts: {
-  to: string
-  subject: string
-  text: string
-}) {
+export async function sendMail(opts: { to: string; subject: string; text: string }) {
   const transporter = getTransporter()
-  if (!transporter)
-    throw new Error('邮件服务未配置（需要 SMTP_HOST/SMTP_USER/SMTP_PASS）')
+  if (!transporter) throw new Error('邮件服务未配置（需要 SMTP_HOST/SMTP_USER/SMTP_PASS）')
   const c = useRuntimeConfig()
   const from = c.smtpFrom || c.smtpUser
   await transporter.sendMail({ from, ...opts })

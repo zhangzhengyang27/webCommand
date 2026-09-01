@@ -13,10 +13,9 @@ export default defineEventHandler(async (event) => {
     return { code: 400, message: '缺少股票代码', data: null }
   }
   try {
-    const buf = await httpGetBuffer(
-      `https://hq.sinajs.cn/list=${encodeURIComponent(code)}`,
-      { Referer: 'https://finance.sina.com.cn' },
-    )
+    const buf = await httpGetBuffer(`https://hq.sinajs.cn/list=${encodeURIComponent(code)}`, {
+      Referer: 'https://finance.sina.com.cn',
+    })
     const resp = new TextDecoder('gbk').decode(buf)
     const m = resp.match(/="(.+?)"/)
     if (!m || !m[1]) {

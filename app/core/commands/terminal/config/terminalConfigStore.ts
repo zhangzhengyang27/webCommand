@@ -1,34 +1,34 @@
-import { defineStore } from "pinia";
+import { defineStore } from 'pinia'
 
 /**
  * 终端配置状态存储
  *
  * @author zhangzhengyang
  */
-export const useTerminalConfigStore = defineStore("terminalConfig", {
+export const useTerminalConfigStore = defineStore('terminalConfig', {
   state: () => ({
-    background: "black", // 背景
+    background: 'black', // 背景
     showHint: true, // 输入提示
     welcomeTexts: [] as string[], // 终端欢迎语
   }),
   getters: {},
   // 持久化
   persist: {
-    key: "terminal-config-store",
+    key: 'terminal-config-store',
     storage: window.localStorage,
-    beforeRestore: (context) => {
-      console.log("加载终端配置数据开始");
+    beforeRestore: (_context) => {
+      console.log('加载终端配置数据开始')
     },
-    afterRestore: (context) => {
-      console.log("加载终端配置数据结束");
+    afterRestore: (_context) => {
+      console.log('加载终端配置数据结束')
     },
   },
   actions: {
     setBackground(url: string) {
       if (!url) {
-        return;
+        return
       }
-      this.background = url;
+      this.background = url
     },
     /**
      * 设置或反转提示
@@ -38,26 +38,26 @@ export const useTerminalConfigStore = defineStore("terminalConfig", {
     setOrToggleShowHint(hint?: string): boolean {
       // 反转提示
       if (!hint) {
-        this.showHint = !this.showHint;
-        return this.showHint;
+        this.showHint = !this.showHint
+        return this.showHint
       }
       // 设置提示
-      if (hint === "on") {
-        this.showHint = true;
-      } else if (hint === "off") {
-        this.showHint = false;
+      if (hint === 'on') {
+        this.showHint = true
+      } else if (hint === 'off') {
+        this.showHint = false
       }
-      return this.showHint;
+      return this.showHint
     },
     /**
      * 修改终端提示语
      * @param welcomeTexts
      */
     setWelcomeTexts(welcomeTexts: string[]) {
-      this.welcomeTexts = welcomeTexts;
+      this.welcomeTexts = welcomeTexts
     },
     reset() {
-      this.$reset();
+      this.$reset()
     },
   },
-});
+})

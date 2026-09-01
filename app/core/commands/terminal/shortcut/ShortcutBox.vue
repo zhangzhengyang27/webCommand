@@ -11,10 +11,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
-import { shortcutList } from "../../../../components/yu-terminal/shortcuts";
+import { onMounted } from 'vue'
+import { shortcutList } from '../../../../components/yu-terminal/shortcuts'
 
-onMounted(() => {});
+onMounted(() => {})
 </script>
 
 <style scoped></style>

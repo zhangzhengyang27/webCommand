@@ -36,17 +36,14 @@ export function fail(code: number, message: string, data: unknown = null) {
  * 包装业务 handler，统一输出 { code, data, message }。
  * 对齐原 Express setRoute：业务错误 HTTP 状态仍为 200，错误码放在 body.code。
  */
-export function bizHandler(
-  fn: (event: H3Event) => unknown | Promise<unknown>,
-): EventHandler {
+export function bizHandler(fn: (event: H3Event) => unknown | Promise<unknown>): EventHandler {
   return defineEventHandler(async (event) => {
     try {
       const data = await fn(event)
       return ok(data === undefined ? true : data)
     } catch (e) {
       if (e instanceof BizError) {
-        if (e.statusCode && e.statusCode !== 200)
-          setResponseStatus(event, e.statusCode)
+        if (e.statusCode && e.statusCode !== 200) setResponseStatus(event, e.statusCode)
         return fail(e.code, e.message)
       }
       console.error('[api error]', event.path, e)

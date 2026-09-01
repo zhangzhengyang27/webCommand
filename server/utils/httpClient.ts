@@ -15,10 +15,7 @@ async function fetchOrThrow(url: string, headers: Record<string, string> = {}) {
   return res
 }
 
-export async function httpGetText(
-  url: string,
-  headers?: Record<string, string>,
-): Promise<string> {
+export async function httpGetText(url: string, headers?: Record<string, string>): Promise<string> {
   const res = await fetchOrThrow(url, headers)
   return await res.text()
 }

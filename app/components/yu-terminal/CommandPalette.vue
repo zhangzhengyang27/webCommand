@@ -30,29 +30,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { commandList } from "../../core/commandRegister";
-import { useCustomCommandStore } from "../../core/commands/custom/customStore";
-import { doCommandExecute } from "../../core/commandExecutor";
-import TerminalType = YuTerminal.TerminalType;
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { commandList } from '../../core/commandRegister'
+import { useCustomCommandStore } from '../../core/commands/custom/customStore'
+import { doCommandExecute } from '../../core/commandExecutor'
+import TerminalType = YuTerminal.TerminalType
 
-const props = defineProps<{ terminal: TerminalType }>();
-const emit = defineEmits<{ (e: "close"): void }>();
+const props = defineProps<{ terminal: TerminalType }>()
+const emit = defineEmits<{ (e: 'close'): void }>()
 
 interface PaletteItem {
-  key: string;
-  label: string; // 回车后执行的文本
-  desc: string;
-  search: string; // 参与匹配的文本（小写）
+  key: string
+  label: string // 回车后执行的文本
+  desc: string
+  search: string // 参与匹配的文本（小写）
 }
 
 // 内置命令（每个命令只列主名，别名仍可搜索）
 const builtinItems: PaletteItem[] = commandList.map((cmd) => ({
   key: `cmd:${cmd.func}`,
   label: cmd.func,
-  desc: cmd.desc || cmd.name || "",
-  search: `${cmd.func} ${cmd.name ?? ""} ${(cmd.alias ?? []).join(" ")}`.toLowerCase(),
-}));
+  desc: cmd.desc || cmd.name || '',
+  search: `${cmd.func} ${cmd.name ?? ''} ${(cmd.alias ?? []).join(' ')}`.toLowerCase(),
+}))
 
 // 自定义命令（登录与持久化由 store 负责）
 const customItems: PaletteItem[] = useCustomCommandStore()
@@ -62,48 +62,48 @@ const customItems: PaletteItem[] = useCustomCommandStore()
     label: name,
     desc: `自定义 => ${text}`,
     search: `custom ${name} ${text}`.toLowerCase(),
-  }));
+  }))
 
-const allItems: PaletteItem[] = [...builtinItems, ...customItems];
+const allItems: PaletteItem[] = [...builtinItems, ...customItems]
 
-const query = ref("");
-const activeIndex = ref(0);
-const inputRef = ref<HTMLInputElement>();
+const query = ref('')
+const activeIndex = ref(0)
+const inputRef = ref<HTMLInputElement>()
 
 const filteredItems = computed<PaletteItem[]>(() => {
-  const q = query.value.trim().toLowerCase();
+  const q = query.value.trim().toLowerCase()
   if (!q) {
-    return allItems;
+    return allItems
   }
   // 空格分隔多关键词，全部命中才算匹配
-  const terms = q.split(/\s+/);
-  return allItems.filter((item) => terms.every((t) => item.search.includes(t)));
-});
+  const terms = q.split(/\s+/)
+  return allItems.filter((item) => terms.every((t) => item.search.includes(t)))
+})
 
 watch(query, () => {
-  activeIndex.value = 0;
-});
+  activeIndex.value = 0
+})
 
 const moveActive = (delta: number) => {
-  const len = filteredItems.value.length;
+  const len = filteredItems.value.length
   if (!len) {
-    return;
+    return
   }
-  activeIndex.value = (activeIndex.value + delta + len) % len;
-};
+  activeIndex.value = (activeIndex.value + delta + len) % len
+}
 
 const execute = (item?: PaletteItem) => {
   if (!item) {
-    return;
+    return
   }
-  emit("close");
-  doCommandExecute(item.label, props.terminal);
-  props.terminal.focusInput();
-};
+  emit('close')
+  doCommandExecute(item.label, props.terminal)
+  props.terminal.focusInput()
+}
 
 onMounted(() => {
-  nextTick(() => inputRef.value?.focus());
-});
+  nextTick(() => inputRef.value?.focus())
+})
 </script>
 
 <style scoped>

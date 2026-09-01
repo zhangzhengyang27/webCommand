@@ -2,17 +2,12 @@
   <div class="content-output">
     <template v-if="output.type === 'text'">
       <div class="content-output-row">
-        <a-tag v-if="outputTagColor" :color="outputTagColor">{{
-          output.status
-        }}</a-tag>
+        <a-tag v-if="outputTagColor" :color="outputTagColor">{{ output.status }}</a-tag>
+        <!-- eslint-disable-next-line vue/no-v-html -- smartText 已做 HTML 转义，用于渲染链接 -->
         <span v-html="smartText(output.text)" />
-        <a-button
-          class="copy-btn"
-          size="small"
-          type="text"
-          @click="copyText"
-          >{{ copied ? "已复制" : "复制" }}</a-button
-        >
+        <a-button class="copy-btn" size="small" type="text" @click="copyText">{{
+          copied ? '已复制' : '复制'
+        }}</a-button>
       </div>
     </template>
     <component
@@ -24,49 +19,49 @@
 </template>
 
 <script setup lang="ts">
-import smartText from "../../utils/smartText";
-import OutputType = YuTerminal.OutputType;
-import { computed, ref, toRefs } from "vue";
+import smartText from '../../utils/smartText'
+import OutputType = YuTerminal.OutputType
+import { computed, ref, toRefs } from 'vue'
 
 interface OutputProps {
-  output: OutputType;
+  output: OutputType
 }
 
-const props = defineProps<OutputProps>();
-const { output } = toRefs(props);
+const props = defineProps<OutputProps>()
+const { output } = toRefs(props)
 
 /**
  * 复制输出文本到剪贴板 (#30)
  */
-const copied = ref(false);
+const copied = ref(false)
 const copyText = async () => {
   try {
-    await navigator.clipboard.writeText(output.value.text || "");
-    copied.value = true;
-    setTimeout(() => (copied.value = false), 1200);
+    await navigator.clipboard.writeText(output.value.text || '')
+    copied.value = true
+    setTimeout(() => (copied.value = false), 1200)
   } catch (e) {
-    console.error("复制失败", e);
+    console.error('复制失败', e)
   }
-};
+}
 const outputTagColor = computed((): string => {
   if (!output.value.status) {
-    return "";
+    return ''
   }
   switch (output.value.status) {
-    case "info":
-      return "dodgerblue";
-    case "success":
-      return "limegreen";
-    case "warning":
-      return "darkorange";
-    case "error":
-      return "#c0300f";
-    case "system":
-      return "#bfc4c9";
+    case 'info':
+      return 'dodgerblue'
+    case 'success':
+      return 'limegreen'
+    case 'warning':
+      return 'darkorange'
+    case 'error':
+      return '#c0300f'
+    case 'system':
+      return '#bfc4c9'
     default:
-      return "";
+      return ''
   }
-});
+})
 </script>
 
 <style scoped>

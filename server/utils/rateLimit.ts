@@ -16,11 +16,7 @@ function sweep(map: Map<string, number[]>, windowMs: number) {
   }
 }
 
-function recordHit(
-  map: Map<string, number[]>,
-  key: string,
-  windowMs: number,
-): number {
+function recordHit(map: Map<string, number[]>, key: string, windowMs: number): number {
   const now = Date.now()
   if (!map.has(key) && map.size >= MAX_KEYS) {
     sweep(map, windowMs)
@@ -48,10 +44,7 @@ export function getClientIp(event: H3Event): string {
  */
 export function createRateLimiter(windowMs: number, max: number): RateLimiter {
   const map = new Map<string, number[]>()
-  const timer = setInterval(
-    () => sweep(map, windowMs),
-    Math.max(windowMs, 60 * 1000),
-  )
+  const timer = setInterval(() => sweep(map, windowMs), Math.max(windowMs, 60 * 1000))
   if (timer.unref) timer.unref()
   return {
     hit(event: H3Event) {

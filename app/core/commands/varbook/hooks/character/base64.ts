@@ -1,1 +1,1 @@
-export const enBase64 = (oldVal: string): string => btoa(encodeURI(oldVal));
+export const enBase64 = (oldVal: string): string => btoa(encodeURI(oldVal))

@@ -4,12 +4,12 @@
 
 <script setup lang="ts">
 interface InfoBoxProps {
-  seconds?: string;
+  seconds?: string
 }
 
 withDefaults(defineProps<InfoBoxProps>(), {
-  seconds: "",
-});
+  seconds: '',
+})
 </script>
 
 <style scoped></style>

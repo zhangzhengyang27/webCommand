@@ -19,10 +19,7 @@ interface CodeEntry {
 const codeMap = new Map<string, CodeEntry>()
 
 function hashCode(email: string, code: string) {
-  return crypto
-    .createHash('sha256')
-    .update(`${email.toLowerCase()}:${code}`)
-    .digest('hex')
+  return crypto.createHash('sha256').update(`${email.toLowerCase()}:${code}`).digest('hex')
 }
 
 function sweep() {
@@ -38,9 +35,7 @@ export function issueCode(email: string): string {
   const entry = codeMap.get(key)
   const now = Date.now()
   if (entry && now - entry.lastSentAt < RESEND_INTERVAL) {
-    const waitSec = Math.ceil(
-      (RESEND_INTERVAL - (now - entry.lastSentAt)) / 1000,
-    )
+    const waitSec = Math.ceil((RESEND_INTERVAL - (now - entry.lastSentAt)) / 1000)
     throw new BizError(ERROR_CODE.PARAMS, `发送过于频繁，请 ${waitSec} 秒后再试`)
   }
   if (codeMap.size > 1000) sweep()

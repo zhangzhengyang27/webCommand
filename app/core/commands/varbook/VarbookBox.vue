@@ -23,40 +23,42 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, toRefs } from "vue";
-import { getNamedVariables } from "./hooks/api/rest/translate";
-import { parseNamedVariable } from "./hooks/character/standard";
-import ContentOutput from "../../../components/yu-terminal/ContentOutput.vue";
-import OutputType = YuTerminal.OutputType;
+import { reactive, ref, toRefs } from 'vue'
+import { getNamedVariables } from './hooks/api/rest/translate'
+import { parseNamedVariable } from './hooks/character/standard'
+import ContentOutput from '../../../components/yu-terminal/ContentOutput.vue'
+import OutputType = YuTerminal.OutputType
 
 interface VariableBoxProps {
-  searchText: string;
+  searchText: string
 }
 
-const props = defineProps<VariableBoxProps>();
+const props = defineProps<VariableBoxProps>()
 
-const { searchText } = toRefs(props);
-const variablesTable = ref<any>({});
-const loadOK = ref(false);
+const { searchText } = toRefs(props)
+const variablesTable = ref<any>({})
+const loadOK = ref(false)
 const output = reactive<OutputType>({
-  type: "text",
-  status: "warning",
-  text: "",
-});
+  type: 'text',
+  status: 'warning',
+  text: '',
+})
 
 getNamedVariables(searchText.value)
   .then((res: any) => {
-    const { code, data, msg } = res;
-    code === 200
-      ? (variablesTable.value = parseNamedVariable(data.namedVariables))
-      : (output.text = msg);
+    const { code, data, msg } = res
+    if (code === 200) {
+      variablesTable.value = parseNamedVariable(data.namedVariables)
+    } else {
+      output.text = msg
+    }
   })
-  .catch((err: any) => {
-    output.text = "服务器扛不住了，请稍后再试";
+  .catch(() => {
+    output.text = '服务器扛不住了，请稍后再试'
   })
   .finally(() => {
-    loadOK.value = true;
-  });
+    loadOK.value = true
+  })
 </script>
 
 <style scoped>

@@ -19,9 +19,7 @@ export default defineEventHandler(async (event) => {
   ]
   for (const s of sources) {
     try {
-      const ip = s.text
-        ? s.pick(await httpGetText(s.url))
-        : s.pick(await httpGetJson<any>(s.url))
+      const ip = s.text ? s.pick(await httpGetText(s.url)) : s.pick(await httpGetJson<any>(s.url))
       if (ip) return { code: 0, data: { ip } }
     } catch (e: any) {
       console.error('ip source failed:', s.url, e?.message || e)

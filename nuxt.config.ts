@@ -10,7 +10,15 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-09-01',
   devtools: { enabled: true },
 
-  modules: ['@pinia/nuxt', 'nuxt-auth-utils'],
+  modules: ['@pinia/nuxt', 'nuxt-auth-utils', '@nuxt/eslint'],
+
+  // ESLint：仅负责代码质量检查，关闭 stylistic 格式规则，
+  // 代码格式统一交由 Prettier 处理，避免两套格式规则冲突。
+  eslint: {
+    config: {
+      stylistic: false,
+    },
+  },
 
   // ant-design-vue 4 reset.css（css-in-js 模式下需手动引入基础重置）
   css: ['ant-design-vue/dist/reset.css'],

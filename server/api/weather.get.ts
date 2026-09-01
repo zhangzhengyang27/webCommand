@@ -13,11 +13,8 @@ export default defineEventHandler(async (event) => {
     setResponseStatus(event, 400)
     return { code: 400, message: '缺少 city 参数', data: null }
   }
-  const format =
-    (query.format as string) || '%l: %c %t 湿度 %h 风速 %w'
-  const url = `https://wttr.in/${encodeURIComponent(city)}?format=${encodeURIComponent(
-    format,
-  )}`
+  const format = (query.format as string) || '%l: %c %t 湿度 %h 风速 %w'
+  const url = `https://wttr.in/${encodeURIComponent(city)}?format=${encodeURIComponent(format)}`
   try {
     const result = await httpGetText(url)
     return { code: 0, data: result }

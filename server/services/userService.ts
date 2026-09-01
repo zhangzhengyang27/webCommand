@@ -24,21 +24,16 @@ export async function userRegister(
   password: string,
   email: string,
 ): Promise<number> {
-  if (!username || !password || !email)
-    throw new BizError(ERROR_CODE.PARAMS, '参数错误')
-  if (username.length > 32)
-    throw new BizError(ERROR_CODE.PARAMS, '用户名过长')
-  if (password.length < 6)
-    throw new BizError(ERROR_CODE.PARAMS, '密码至少 6 位')
+  if (!username || !password || !email) throw new BizError(ERROR_CODE.PARAMS, '参数错误')
+  if (username.length > 32) throw new BizError(ERROR_CODE.PARAMS, '用户名过长')
+  if (password.length < 6) throw new BizError(ERROR_CODE.PARAMS, '密码至少 6 位')
   const regEmail = /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/
-  if (!regEmail.test(email))
-    throw new BizError(ERROR_CODE.PARAMS, '邮箱非法')
+  if (!regEmail.test(email)) throw new BizError(ERROR_CODE.PARAMS, '邮箱非法')
 
   const existed = await UserModel().findOne({
     where: { [Op.or]: [{ username }, { email }] },
   })
-  if (existed)
-    throw new BizError(ERROR_CODE.PARAMS, '该用户名或邮箱已被注册')
+  if (existed) throw new BizError(ERROR_CODE.PARAMS, '该用户名或邮箱已被注册')
 
   try {
     const user = await UserModel().create({
@@ -60,24 +55,16 @@ export async function userRegister(
  * 校验账号密码并返回脱敏用户（登录核心逻辑，session 写入交由路由层）。
  * 历史 MD5 密码校验通过后自动升级为 bcrypt。
  */
-export async function verifyCredentials(
-  username: string,
-  password: string,
-): Promise<SafeUser> {
-  if (!username || !password)
-    throw new BizError(ERROR_CODE.PARAMS, '参数错误')
+export async function verifyCredentials(username: string, password: string): Promise<SafeUser> {
+  if (!username || !password) throw new BizError(ERROR_CODE.PARAMS, '参数错误')
   const user = await UserModel().findOne({ where: { username } })
-  if (!user)
-    throw new BizError(ERROR_CODE.NOT_FOUND, '用户不存在或密码错误')
+  if (!user) throw new BizError(ERROR_CODE.NOT_FOUND, '用户不存在或密码错误')
   const attrs = user.toJSON() as any
-  if (attrs.isDelete)
-    throw new BizError(ERROR_CODE.NOT_FOUND, '用户不存在或密码错误')
-  if (attrs.status !== 0)
-    throw new BizError(ERROR_CODE.NO_AUTH, '账号已被封禁')
+  if (attrs.isDelete) throw new BizError(ERROR_CODE.NOT_FOUND, '用户不存在或密码错误')
+  if (attrs.status !== 0) throw new BizError(ERROR_CODE.NO_AUTH, '账号已被封禁')
 
   const valid = await verifyPassword(password, attrs.password)
-  if (!valid)
-    throw new BizError(ERROR_CODE.NOT_FOUND, '用户不存在或密码错误')
+  if (!valid) throw new BizError(ERROR_CODE.NOT_FOUND, '用户不存在或密码错误')
 
   if (!isBcrypt(attrs.password)) {
     await UserModel().update(
@@ -103,10 +90,8 @@ export async function updateUserPassword(
   oldPassword: string,
   newPassword: string,
 ): Promise<boolean> {
-  if (!oldPassword || !newPassword)
-    throw new BizError(ERROR_CODE.PARAMS, '参数错误')
-  if (newPassword.length < 6)
-    throw new BizError(ERROR_CODE.PARAMS, '密码至少 6 位')
+  if (!oldPassword || !newPassword) throw new BizError(ERROR_CODE.PARAMS, '参数错误')
+  if (newPassword.length < 6) throw new BizError(ERROR_CODE.PARAMS, '密码至少 6 位')
   const user = await UserModel().findByPk(userId)
   if (!user || (user.toJSON() as any).isDelete)
     throw new BizError(ERROR_CODE.NOT_FOUND, '找不到该用户')
@@ -133,8 +118,7 @@ export async function resetUserPassword(
   userId: number | string,
   newPassword: string,
 ): Promise<boolean> {
-  if (!newPassword || newPassword.length < 6)
-    throw new BizError(ERROR_CODE.PARAMS, '密码至少 6 位')
+  if (!newPassword || newPassword.length < 6) throw new BizError(ERROR_CODE.PARAMS, '密码至少 6 位')
   await UserModel().update(
     { password: await bcrypt.hash(newPassword, BCRYPT_ROUNDS) },
     { where: { id: userId } },

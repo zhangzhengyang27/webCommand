@@ -1,17 +1,17 @@
-import listCommand from "./listCommand";
-import removeCommand from "./removeCommand";
-import addCommand from "./addCommand";
-import mkdirCommand from "./mkdirCommand";
-import pwdCommand from "./pwdCommand";
-import cdCommand from "./cdCommand";
-import moveCommand from "./moveCommand";
-import copyCommand from "./copyCommand";
+import listCommand from './listCommand'
+import removeCommand from './removeCommand'
+import addCommand from './addCommand'
+import mkdirCommand from './mkdirCommand'
+import pwdCommand from './pwdCommand'
+import cdCommand from './cdCommand'
+import moveCommand from './moveCommand'
+import copyCommand from './copyCommand'
 
 /**
  * 空间类型（扁平）
  */
 export interface SpaceType {
-  [dir: string]: SpaceItemType;
+  [dir: string]: SpaceItemType
 }
 
 /**
@@ -19,11 +19,11 @@ export interface SpaceType {
  */
 export interface SpaceItemType {
   // 条目 / 目录名
-  name: string;
-  link?: string;
+  name: string
+  link?: string
   // 所属目录
-  dir: string;
-  type: "dir" | "link";
+  dir: string
+  type: 'dir' | 'link'
 }
 
 /**
@@ -38,4 +38,4 @@ export default [
   cdCommand,
   moveCommand,
   copyCommand,
-];
+]

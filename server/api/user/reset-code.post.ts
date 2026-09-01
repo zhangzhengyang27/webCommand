@@ -5,15 +5,11 @@ import { bizHandler, BizError, ERROR_CODE } from '../../utils/response'
 import { authLimiter } from '../../utils/rateLimit'
 
 export default bizHandler(async (event) => {
-  if (authLimiter.hit(event))
-    throw new BizError(ERROR_CODE.PARAMS, '操作过于频繁，请稍后再试', 429)
+  if (authLimiter.hit(event)) throw new BizError(ERROR_CODE.PARAMS, '操作过于频繁，请稍后再试', 429)
   const { email } = (await readBody(event)) || {}
   if (!email) throw new BizError(ERROR_CODE.PARAMS, '参数错误')
   if (!isMailConfigured())
-    throw new BizError(
-      ERROR_CODE.THIRD_PART,
-      '邮件服务未配置，请联系管理员设置 SMTP 环境变量',
-    )
+    throw new BizError(ERROR_CODE.THIRD_PART, '邮件服务未配置，请联系管理员设置 SMTP 环境变量')
   const user = await findActiveUserByEmail(email)
   if (!user) return true // 不泄露邮箱是否已注册
   const code = issueCode(email)
