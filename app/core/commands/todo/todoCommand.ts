@@ -1,6 +1,6 @@
 import type { CommandType } from '../../command'
 import { defineAsyncComponent } from 'vue'
-import ComponentOutputType = YuTerminal.ComponentOutputType
+import ComponentOutputType = Terminal.ComponentOutputType
 import addCommand from './subCommands/addCommand'
 import listCommand from './subCommands/listCommand'
 import deleteCommand from './subCommands/deleteCommand'

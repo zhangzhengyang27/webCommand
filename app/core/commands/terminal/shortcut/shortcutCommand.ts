@@ -1,6 +1,6 @@
 import type { CommandType } from '../../../command'
 import { defineAsyncComponent } from 'vue'
-import ComponentOutputType = YuTerminal.ComponentOutputType
+import ComponentOutputType = Terminal.ComponentOutputType
 
 /**
  * 快捷键命令

@@ -1,6 +1,6 @@
 import type { CommandType } from '../../command'
 import { defineAsyncComponent } from 'vue'
-import ComponentOutputType = YuTerminal.ComponentOutputType
+import ComponentOutputType = Terminal.ComponentOutputType
 import { checkSearchText } from './hooks/character/standard'
 
 /**

@@ -1,6 +1,6 @@
 import type { CommandType } from '../../command'
 import { defineAsyncComponent } from 'vue'
-import ComponentOutputType = YuTerminal.ComponentOutputType
+import ComponentOutputType = Terminal.ComponentOutputType
 
 /**
  * 数据导入命令：展示导入组件，粘贴备份 JSON 恢复

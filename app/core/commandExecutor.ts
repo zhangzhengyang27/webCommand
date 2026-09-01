@@ -1,7 +1,7 @@
 import * as getoptsNamespace from 'getopts'
 import { commandMap } from './commandRegister'
 import type { CommandOptionType, CommandType } from './command'
-import TerminalType = YuTerminal.TerminalType
+import TerminalType = Terminal.TerminalType
 import helpCommand from './commands/terminal/help/helpCommand'
 import { useCustomCommandStore } from './commands/custom/customStore'
 const getopts: (

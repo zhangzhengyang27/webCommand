@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import smartText from '../../utils/smartText'
+import smartText from '../utils/smartText'
 import OutputType = Terminal.OutputType
 import { computed, ref, toRefs } from 'vue'
 

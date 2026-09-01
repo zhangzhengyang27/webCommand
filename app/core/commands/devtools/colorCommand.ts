@@ -1,6 +1,6 @@
 import type { CommandType } from '../../command'
 import { defineAsyncComponent } from 'vue'
-import ComponentOutputType = YuTerminal.ComponentOutputType
+import ComponentOutputType = Terminal.ComponentOutputType
 
 /**
  * 颜色解析：支持 #rgb / #rgba / #rrggbb / #rrggbbaa / rgb(r,g,b) / r,g,b

@@ -1,7 +1,7 @@
 import type { CommandType } from '../../../command'
 import { defineAsyncComponent } from 'vue'
 import { commandMap } from '../../../commandRegister'
-import ComponentOutputType = YuTerminal.ComponentOutputType
+import ComponentOutputType = Terminal.ComponentOutputType
 
 /**
  * 帮助命令

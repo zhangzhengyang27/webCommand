@@ -85,5 +85,12 @@ export default defineNuxtConfig({
 
   typescript: {
     strict: true,
+    // 项目使用全局 namespace + import alias（如 `import X = Terminal.X`）定义终端类型，
+    // 该写法与 Nuxt 4 默认开启的 verbatimModuleSyntax 不兼容，覆盖为 false 以消除 TS1288。
+    tsConfig: {
+      compilerOptions: {
+        verbatimModuleSyntax: false,
+      },
+    },
   },
 })

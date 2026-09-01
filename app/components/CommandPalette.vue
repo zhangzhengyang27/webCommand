@@ -31,9 +31,9 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { commandList } from '../../core/commandRegister'
-import { useCustomCommandStore } from '../../core/commands/custom/customStore'
-import { doCommandExecute } from '../../core/commandExecutor'
+import { commandList } from '../core/commandRegister'
+import { useCustomCommandStore } from '../core/commands/custom/customStore'
+import { doCommandExecute } from '../core/commandExecutor'
 import TerminalType = Terminal.TerminalType
 
 const props = defineProps<{ terminal: TerminalType }>()

@@ -1,5 +1,5 @@
 import type { ParsedOptions } from 'getopts'
-import TerminalType = YuTerminal.TerminalType
+import TerminalType = Terminal.TerminalType
 
 /**
  * 命令类型

@@ -1,10 +1,10 @@
 import { ref } from 'vue'
-import { getUsageStr } from '../../core/commands/terminal/help/helpUtils'
-import { commandMap } from '../../core/commandRegister'
-import type { CommandType } from '../../core/command'
+import { getUsageStr } from '../core/commands/terminal/help/helpUtils'
+import { commandMap } from '../core/commandRegister'
+import type { CommandType } from '../core/command'
 import debounce from 'lodash/debounce'
 import trim from 'lodash/trim'
-import { useTerminalConfigStore } from '../../core/commands/terminal/config/terminalConfigStore'
+import { useTerminalConfigStore } from '../core/commands/terminal/config/terminalConfigStore'
 
 /**
  * 命令提示与 Tab 自动补全功能

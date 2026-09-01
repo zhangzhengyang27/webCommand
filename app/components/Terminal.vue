@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/multi-word-component-names -- 终端主组件，刻意使用单单词命名（页面级根组件，不与其他原生元素冲突） -->
 <template>
   <div class="terminal-wrapper" :style="wrapperStyle" @click="handleClickWrapper">
     <div ref="terminalRef" class="terminal" :style="mainStyle">
@@ -91,12 +92,12 @@ import useHistory from './history'
 import CommandPalette from './CommandPalette.vue'
 import ContentOutput from './ContentOutput.vue'
 import OutputStatusType = Terminal.OutputStatusType
-import { useTerminalConfigStore } from '../../core/commands/terminal/config/terminalConfigStore'
-import { useThemeStore } from '../../core/commands/theme/themeStore'
-import { useSpaceStore } from '../../core/commands/space/spaceStore'
+import { useTerminalConfigStore } from '../core/commands/terminal/config/terminalConfigStore'
+import { useThemeStore } from '../core/commands/theme/themeStore'
+import { useSpaceStore } from '../core/commands/space/spaceStore'
 import useHint from './hint'
 import UserType = User.UserType
-import { LOCAL_USER } from '../../core/commands/user/userConstant'
+import { LOCAL_USER } from '../core/commands/user/userConstant'
 
 interface TerminalProps {
   height?: string | number

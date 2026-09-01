@@ -1,10 +1,5 @@
 <template>
-  <yu-terminal
-    ref="terminalRef"
-    :user="loginUser"
-    full-screen
-    :on-submit-command="onSubmitCommand"
-  />
+  <terminal ref="terminalRef" :user="loginUser" full-screen :on-submit-command="onSubmitCommand" />
 </template>
 
 <script setup lang="ts">
