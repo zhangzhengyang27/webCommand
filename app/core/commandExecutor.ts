@@ -35,7 +35,7 @@ export const doCommandExecute = async (
   const command: CommandType = getCommand(text, parentCommand)
   if (!command) {
     // 自定义命令回退：输入的名称匹配用户自定义的快捷命令时，执行其对应文本 (#73)
-    const token = text.split(' ', 1)[0].toLowerCase()
+    const token = (text.split(' ', 1)[0] ?? '').toLowerCase()
     const customText = useCustomCommandStore().getCustom(token)
     if (customText) {
       // 保留自定义命令名之后追加的参数，如 g google.com => goto google.com
@@ -72,7 +72,7 @@ export const doCommandExecute = async (
  * @param parentCommand
  */
 const getCommand = (text: string, parentCommand?: CommandType): CommandType => {
-  let func = text.split(' ', 1)[0]
+  let func = text.split(' ', 1)[0] ?? ''
   func = func.toLowerCase() // 大小写无关
   let commands = commandMap
   // 有父命令，则从父命令中查找

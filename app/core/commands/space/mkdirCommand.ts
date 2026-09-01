@@ -23,7 +23,7 @@ const mkdirCommand: CommandType = {
       return
     }
     const spaceStore = useSpaceStore()
-    const newDir = _[0]
+    const newDir = _[0]!
     const item: SpaceItemType = {
       dir: spaceStore.currentDir,
       name: newDir,

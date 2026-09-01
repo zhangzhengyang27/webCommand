@@ -31,12 +31,12 @@ export default {
       terminal.writeTextErrorResult('参数不足')
       return
     }
-    let link = _[0]
+    let link = _[0]!
     // 优先找空间条目链接
     const { getItem } = useSpaceStore()
     const item = getItem(link)
     if (item?.link) {
-      link = item?.link
+      link = item.link
     }
     if (!link.startsWith('http://') && !link.startsWith('https://')) {
       link = 'http://' + link

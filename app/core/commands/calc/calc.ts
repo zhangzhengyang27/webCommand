@@ -98,7 +98,7 @@ class Parser {
   parseNumber(): number {
     this.skipWhitespace()
     const start = this.pos
-    while (this.pos < this.input.length && /[0-9.]/.test(this.input[this.pos])) {
+    while (this.pos < this.input.length && /[0-9.]/.test(this.input[this.pos]!)) {
       this.pos++
     }
     if (start === this.pos) {
@@ -136,7 +136,7 @@ class Parser {
   }
 
   private skipWhitespace(): void {
-    while (this.pos < this.input.length && /\s/.test(this.input[this.pos])) {
+    while (this.pos < this.input.length && /\s/.test(this.input[this.pos]!)) {
       this.pos++
     }
   }

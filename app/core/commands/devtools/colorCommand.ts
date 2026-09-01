@@ -9,15 +9,15 @@ function parseColor(input: string): { r: number; g: number; b: number; a: number
   const text = input.trim().toLowerCase()
   let m = text.match(/^#?([0-9a-f]{3,4})$/)
   if (m) {
-    const [r, g, b, a] = m[1].split('').map((c) => parseInt(c + c, 16))
+    const [r = 0, g = 0, b = 0, a] = m[1]!.split('').map((c) => parseInt(c + c, 16))
     return { r, g, b, a: a === undefined ? 1 : a / 255 }
   }
   m = text.match(/^#?([0-9a-f]{6})([0-9a-f]{2})?$/)
   if (m) {
     return {
-      r: parseInt(m[1].slice(0, 2), 16),
-      g: parseInt(m[1].slice(2, 4), 16),
-      b: parseInt(m[1].slice(4, 6), 16),
+      r: parseInt(m[1]!.slice(0, 2), 16),
+      g: parseInt(m[1]!.slice(2, 4), 16),
+      b: parseInt(m[1]!.slice(4, 6), 16),
       a: m[2] ? parseInt(m[2], 16) / 255 : 1,
     }
   }

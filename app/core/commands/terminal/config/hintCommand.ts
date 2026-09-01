@@ -22,7 +22,7 @@ const hintCommand: CommandType = {
     const { setOrToggleShowHint } = useTerminalConfigStore()
     let newHint
     if (_.length >= 1) {
-      if (['on', 'off'].includes(_[0])) {
+      if (['on', 'off'].includes(_[0]!)) {
         newHint = _[0]
       }
     }

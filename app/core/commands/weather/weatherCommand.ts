@@ -49,7 +49,7 @@ const weatherCommand: CommandType = {
       const text = json.data as string
       const containerMatch = text.match(/<div class="term-container">([\s\S]*?)<\/div>/)
       const cleanText = containerMatch
-        ? containerMatch[1].replace(/<[^>]+>/g, '').trim()
+        ? containerMatch[1]!.replace(/<[^>]+>/g, '').trim()
         : text.trim()
       terminal.writeTextResult(decodeHtmlEntities(cleanText) || '暂无天气数据')
     } catch (e) {

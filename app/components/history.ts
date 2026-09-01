@@ -21,7 +21,7 @@ const useHistory = (commandList: Ref<CommandOutputType[]>, inputCommand: Ref<Com
   const showNextCommand = () => {
     if (commandHistoryPos.value < commandList.value.length - 1) {
       commandHistoryPos.value++
-      inputCommand.value.text = commandList.value[commandHistoryPos.value].text
+      inputCommand.value.text = commandList.value[commandHistoryPos.value]?.text ?? ''
     } else if (commandHistoryPos.value === commandList.value.length - 1) {
       commandHistoryPos.value++
       inputCommand.value.text = ''
@@ -31,7 +31,7 @@ const useHistory = (commandList: Ref<CommandOutputType[]>, inputCommand: Ref<Com
   const showPrevCommand = () => {
     if (commandHistoryPos.value >= 1) {
       commandHistoryPos.value--
-      inputCommand.value.text = commandList.value[commandHistoryPos.value].text
+      inputCommand.value.text = commandList.value[commandHistoryPos.value]?.text ?? ''
     }
   }
 

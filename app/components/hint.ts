@@ -128,7 +128,7 @@ const useHint = () => {
     }
     // 子命令提示（支持前缀匹配）
     if (command.subCommands) {
-      const subCommand = matchSubCommand(command, tokens[1])
+      const subCommand = matchSubCommand(command, tokens[1] ?? '')
       hint.value = subCommand ? getUsageStr(subCommand, command) : ''
       return
     }
@@ -139,7 +139,7 @@ const useHint = () => {
    * 选取下一个候选并推进循环索引
    */
   const pickNextCandidate = <T>(candidates: T[]): T => {
-    const selected = candidates[tabCycleIndex % candidates.length]
+    const selected = candidates[tabCycleIndex % candidates.length]!
     tabCycleIndex = (tabCycleIndex + 1) % candidates.length
     return selected
   }
@@ -168,7 +168,7 @@ const useHint = () => {
 
     // 未匹配到命令：补全命令名
     if (!command) {
-      const lastToken = tokens[tokens.length - 1].toLowerCase()
+      const lastToken = (tokens[tokens.length - 1] ?? '').toLowerCase()
       const candidates = matchCommandNames(lastToken)
       if (candidates.length === 0) {
         return null
@@ -194,7 +194,7 @@ const useHint = () => {
 
     // 正在输入第二个词：补全子命令；若无匹配则补全父命令选项
     if (tokens.length === 2 && !endsWithSpace) {
-      const prefix = tokens[1].toLowerCase()
+      const prefix = (tokens[1] ?? '').toLowerCase()
       const subCandidates = getSubCommandNames(command).filter((name) =>
         name.toLowerCase().startsWith(prefix),
       )
@@ -214,7 +214,7 @@ const useHint = () => {
 
     // 已输入子命令：补全该子命令的选项
     if (subCommand) {
-      const lastToken = tokens[tokens.length - 1]
+      const lastToken = tokens[tokens.length - 1] ?? ''
       const prefix = endsWithSpace ? '' : lastToken.toLowerCase()
       const optionNames = getOptionNames(subCommand)
       const candidates = optionNames.filter((name) =>
@@ -232,7 +232,7 @@ const useHint = () => {
     }
 
     // 未匹配到子命令：补全父命令选项
-    const lastToken = tokens[tokens.length - 1]
+    const lastToken = tokens[tokens.length - 1] ?? ''
     const prefix = endsWithSpace ? '' : lastToken.toLowerCase()
     const optionNames = getOptionNames(command)
     const candidates = optionNames.filter((name) =>

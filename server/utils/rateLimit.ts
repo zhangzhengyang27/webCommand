@@ -35,7 +35,7 @@ function recordHit(map: Map<string, number[]>, key: string, windowMs: number): n
 export function getClientIp(event: H3Event): string {
   const cfg = useRuntimeConfig(event)
   const fwd = getRequestHeader(event, 'x-forwarded-for')
-  if (cfg.trustProxy && fwd) return fwd.split(',')[0].trim()
+  if (cfg.trustProxy && fwd) return fwd.split(',')[0]!.trim()
   return event.node.req.socket.remoteAddress || ''
 }
 

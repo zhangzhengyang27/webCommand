@@ -128,7 +128,7 @@ export const useTodoStore = defineStore('todo', {
       if (index < 0 || index >= this.taskList.length) {
         return false
       }
-      const task = this.taskList[index]
+      const task = this.taskList[index]!
       // 状态切换时自动维护完成时间
       if (newTask.isFinished !== undefined && newTask.isFinished && !task.isFinished) {
         newTask.finishTime = new Date()
@@ -136,7 +136,7 @@ export const useTodoStore = defineStore('todo', {
       if (newTask.isFinished === false) {
         newTask.finishTime = undefined
       }
-      this.taskList[index] = { ...task, ...newTask }
+      this.taskList[index] = { ...task, ...newTask } as TaskType
       return true
     },
     /**
@@ -148,7 +148,7 @@ export const useTodoStore = defineStore('todo', {
       if (index === -1) {
         return false
       }
-      const task = this.taskList[index]
+      const task = this.taskList[index]!
       return this.updateTask(index, { isFinished: !task.isFinished })
     },
     /**

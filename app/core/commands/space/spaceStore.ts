@@ -75,10 +75,10 @@ export const useSpaceStore = defineStore('space', {
         if (!recursive) {
           // 直接子级的 '/' 数比父级多 1
           if (getItemDepth(key) - 1 === parentDirDepth) {
-            resultList.push(this.space[key])
+            resultList.push(this.space[key]!)
           }
         } else {
-          resultList.push(this.space[key])
+          resultList.push(this.space[key]!)
         }
       }
       return resultList
@@ -169,7 +169,7 @@ export const useSpaceStore = defineStore('space', {
       if (recursive && sourceItem.type === 'dir') {
         for (const spaceKey in this.space) {
           if (spaceKey !== sourceFullPath && spaceKey.startsWith(sourceFullPath + '/')) {
-            const childItem = { ...this.space[spaceKey] }
+            const childItem = { ...this.space[spaceKey]! }
             const childRelativePath = spaceKey.substring(sourceFullPath.length)
             const newChildPath = targetFullPath + childRelativePath
             const newChildDir = getParentDir(newChildPath)

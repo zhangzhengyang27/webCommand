@@ -45,7 +45,7 @@ const convertCommand: CommandType = {
       terminal.writeTextErrorResult(`'${_[0]}' 不是有效数字`)
       return
     }
-    const result = convert(value, _[1], _[3])
+    const result = convert(value, _[1]!, _[3]!)
     if (!result.ok) {
       terminal.writeTextErrorResult(result.error)
       return

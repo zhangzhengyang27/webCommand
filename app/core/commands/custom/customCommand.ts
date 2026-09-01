@@ -37,7 +37,7 @@ const customCommand: CommandType = {
         terminal.writeTextErrorResult('用法：custom add <名称> <要执行的命令>')
         return
       }
-      const name = rest[0]
+      const name = rest[0]!
       // 剥离首尾引号：custom add g "goto baidu" 不应把引号一起存入映射
       const commandText = rest
         .slice(1)

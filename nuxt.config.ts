@@ -1,5 +1,6 @@
 import Components from 'unplugin-vue-components/vite'
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
+import type { SessionConfig } from 'h3'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -56,10 +57,11 @@ export default defineNuxtConfig({
   },
 
   // 会话有效期 30 天（对齐原 express-session 的 cookie maxAge）
+  // password 由环境变量 NUXT_SESSION_PASSWORD 提供，此处仅覆盖 maxAge
   runtimeConfig: {
     session: {
       maxAge: 60 * 60 * 24 * 30,
-    },
+    } as SessionConfig,
     // MySQL
     dbHost: process.env.DB_HOST || 'localhost',
     dbPort: Number(process.env.DB_PORT) || 3306,

@@ -33,7 +33,7 @@ const pingCommand: CommandType = {
       terminal.writeTextErrorResult('参数不足')
       return
     }
-    let dest = _[0]
+    let dest = _[0]!
     if (!dest.toLowerCase().startsWith('http://') && !dest.toLowerCase().startsWith('https://')) {
       dest = 'https://' + dest
     }
