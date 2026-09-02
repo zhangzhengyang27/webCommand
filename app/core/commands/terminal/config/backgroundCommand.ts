@@ -1,6 +1,7 @@
 import type { CommandType } from '../../../command'
 import { useTerminalConfigStore } from './terminalConfigStore'
 import myAxios from '../../../../utils/myAxios'
+import { errMsg } from '../../../../utils/error'
 
 /**
  * 切换终端背景
@@ -33,12 +34,16 @@ const backgroundCommand: CommandType = {
     const { setBackground } = useTerminalConfigStore()
     if (!url) {
       // 随机获取壁纸
-      const res: any = await myAxios.post('/background/get/random', { type })
-      if (res?.code === 0 && res.data) {
-        setBackground(res.data)
-        terminal.writeTextSuccessResult('背景设置成功')
-      } else {
-        terminal.writeTextErrorResult(res?.message ?? '获取随机壁纸失败')
+      try {
+        const res = await myAxios.post<string>('/background/get/random', { type })
+        if (res?.code === 0 && res.data) {
+          setBackground(res.data)
+          terminal.writeTextSuccessResult('背景设置成功')
+        } else {
+          terminal.writeTextErrorResult(res?.message ?? '获取随机壁纸失败')
+        }
+      } catch (e) {
+        terminal.writeTextErrorResult(errMsg(e))
       }
       return
     }

@@ -1,5 +1,6 @@
 import type { CommandType } from '../../command'
 import myAxios from '../../../utils/myAxios'
+import { errMsg } from '../../../utils/error'
 
 /**
  * 解码 HTML 实体（wttr.in 文本中含 &#47; 等），避免被 smartText 二次转义后原样显示
@@ -29,7 +30,6 @@ const weatherCommand: CommandType = {
     {
       key: 'city',
       desc: '城市名',
-      required: true,
     },
   ],
   options: [],
@@ -41,19 +41,19 @@ const weatherCommand: CommandType = {
       return
     }
     try {
-      const json: any = await myAxios.get('/weather', { params: { city } })
+      const json = await myAxios.get<string>('/weather', { params: { city } })
       if (json.code !== 0 || !json.data) {
         throw new Error(json.message || '天气服务返回异常')
       }
       // 浏览器 User-Agent 下 wttr.in 会返回 HTML 页面，需从 term-container 中提取纯文本
-      const text = json.data as string
+      const text = json.data
       const containerMatch = text.match(/<div class="term-container">([\s\S]*?)<\/div>/)
       const cleanText = containerMatch
         ? containerMatch[1]!.replace(/<[^>]+>/g, '').trim()
         : text.trim()
       terminal.writeTextResult(decodeHtmlEntities(cleanText) || '暂无天气数据')
     } catch (e) {
-      terminal.writeTextErrorResult(`天气查询失败：${(e as Error).message}，请检查城市名或网络`)
+      terminal.writeTextErrorResult(`天气查询失败：${errMsg(e)}，请检查城市名或网络`)
     }
   },
 }

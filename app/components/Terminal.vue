@@ -7,7 +7,7 @@
         <span class="terminal-status-path">{{ prompt }}</span>
         <span class="terminal-status-clock">{{ currentTime }}</span>
       </div>
-      <a-collapse v-model:active-key="activeKeys" :bordered="false" expand-icon-position="right">
+      <a-collapse v-model:active-key="activeKeys" :bordered="false" expand-icon-position="end">
         <template v-for="(output, index) in outputList" :key="index">
           <!-- 折叠 -->
           <a-collapse-panel v-if="output.collapsible" :key="index" class="terminal-row">
@@ -110,7 +110,8 @@ interface TerminalProps {
 const props = withDefaults(defineProps<TerminalProps>(), {
   height: '400px',
   fullScreen: false,
-  user: LOCAL_USER as any,
+  // 对象默认值使用惰性函数形式，避免共享引用并满足类型推断
+  user: () => LOCAL_USER,
 })
 
 const { user } = toRefs(props)
@@ -247,22 +248,23 @@ watch(
  * 快照序列化前清洗：组件（含内嵌 resultList 中的组件）无法 JSON 序列化，
  * 转为提示文本，避免恢复后出现残缺空白/报错 (#94)
  */
-const sanitizeForSnapshot = (o: any): any => {
+const sanitizeForSnapshot = (o: unknown): unknown => {
   if (!o || typeof o !== 'object') {
     return null
   }
-  if (o.type === 'component') {
+  const obj = o as Record<string, unknown>
+  if (obj.type === 'component') {
     return { type: 'text', text: '（该内容包含交互组件，刷新后已省略）' }
   }
   // 命令回显同样需要脱敏，避免 `user login -p xxx` 明文落入 localStorage
-  if (o.type === 'command' && typeof o.text === 'string') {
-    return { ...o, text: redactSensitiveText(o.text) }
+  if (obj.type === 'command' && typeof obj.text === 'string') {
+    return { ...obj, text: redactSensitiveText(obj.text) }
   }
-  if (Array.isArray(o.resultList)) {
-    const resultList = o.resultList.map((r: any) => sanitizeForSnapshot(r)).filter(Boolean)
-    return { ...o, resultList }
+  if (Array.isArray(obj.resultList)) {
+    const resultList = obj.resultList.map((r) => sanitizeForSnapshot(r)).filter(Boolean)
+    return { ...obj, resultList }
   }
-  return o
+  return obj
 }
 
 /**
@@ -445,13 +447,13 @@ const wrapperStyle = computed(() => {
     style.background = themeStore.currentTheme.background
   }
   // 注入主题 CSS 变量
-  style['--terminal-background' as any] = themeStore.currentTheme.background
-  style['--terminal-foreground' as any] = themeStore.currentTheme.foreground
-  style['--terminal-prompt' as any] = themeStore.currentTheme.prompt
-  style['--terminal-success' as any] = themeStore.currentTheme.success
-  style['--terminal-error' as any] = themeStore.currentTheme.error
-  style['--terminal-warning' as any] = themeStore.currentTheme.warning
-  style['--terminal-link' as any] = themeStore.currentTheme.link
+  style['--terminal-background'] = themeStore.currentTheme.background
+  style['--terminal-foreground'] = themeStore.currentTheme.foreground
+  style['--terminal-prompt'] = themeStore.currentTheme.prompt
+  style['--terminal-success'] = themeStore.currentTheme.success
+  style['--terminal-error'] = themeStore.currentTheme.error
+  style['--terminal-warning'] = themeStore.currentTheme.warning
+  style['--terminal-link'] = themeStore.currentTheme.link
   return style
 })
 
@@ -497,11 +499,12 @@ const writeTextSuccessResult = (text: string) => {
  * @param output
  */
 const writeResult = (output: OutputType) => {
-  // 避免 Vue 对组件对象做响应式包装，减少性能开销并消除警告
-  if (output.type === 'component' && (output as any).component) {
-    ;(output as any).component = markRaw((output as any).component)
+  // 整体 markRaw：避免 push 到 reactive resultList 后对象被 Proxy 包装，
+  // 否则 defineAsyncComponent 返回的组件对象会丢失 template，触发 Vue 警告。
+  if (output.type === 'component' && output.component) {
+    output.component = markRaw(output.component)
   }
-  currentNewCommand.resultList.push(output)
+  currentNewCommand.resultList.push(markRaw(output))
 }
 
 /**
@@ -631,10 +634,12 @@ onMounted(() => {
   try {
     const saved = localStorage.getItem(OUTPUT_SNAPSHOT_KEY)
     if (saved) {
-      const arr = JSON.parse(saved)
-      if (Array.isArray(arr) && arr.length > 0) {
+      const parsed: unknown = JSON.parse(saved)
+      if (Array.isArray(parsed) && parsed.length > 0) {
         // 清洗，兼容旧版本残留的残缺组件结果
-        outputList.value = arr.map((o: any) => sanitizeForSnapshot(o)).filter(Boolean)
+        outputList.value = parsed
+          .map((o) => sanitizeForSnapshot(o))
+          .filter((v): v is OutputType => Boolean(v))
         restored = true
       }
     }
@@ -702,7 +707,7 @@ defineExpose({
   font-size: 16px;
 }
 
-.terminal :deep(.ant-collapse-icon-position-right > .ant-collapse-item > .ant-collapse-header) {
+.terminal :deep([class*='ant-collapse-icon-position'] > .ant-collapse-item > .ant-collapse-header) {
   color: var(--terminal-foreground, white);
   padding: 0;
 }

@@ -1,5 +1,6 @@
 import type { CommandType } from '../../command'
 import myAxios from '../../../utils/myAxios'
+import { errMsg } from '../../../utils/error'
 
 /**
  * 二维码生成命令 (#27)
@@ -25,14 +26,14 @@ const qrcodeCommand: CommandType = {
       return
     }
     try {
-      const res: any = await myAxios.get(`/qrcode?text=${encodeURIComponent(text)}`)
+      const res = await myAxios.get<string>(`/qrcode?text=${encodeURIComponent(text)}`)
       if (res?.code === 0 && res.data) {
         terminal.writeTextSuccessResult(`二维码地址：${res.data}`)
       } else {
         terminal.writeTextErrorResult(res?.message ?? '生成失败')
       }
-    } catch (e: any) {
-      terminal.writeTextErrorResult(e?.message ?? '生成失败')
+    } catch (e) {
+      terminal.writeTextErrorResult(errMsg(e))
     }
   },
 }

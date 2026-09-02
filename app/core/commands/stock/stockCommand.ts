@@ -1,5 +1,18 @@
 import type { CommandType } from '../../command'
 import myAxios from '../../../utils/myAxios'
+import { errMsg } from '../../../utils/error'
+
+/** 股票行情（对齐 server/api/stock.get.ts 返回） */
+interface StockQuote {
+  name: string
+  open: string
+  preClose: string
+  price: string
+  high: string
+  low: string
+  volume: string
+  time: string
+}
 
 /**
  * 股票行情命令 (#27)
@@ -25,7 +38,7 @@ const stockCommand: CommandType = {
       return
     }
     try {
-      const res: any = await myAxios.get(`/stock?code=${encodeURIComponent(code)}`)
+      const res = await myAxios.get<StockQuote>(`/stock?code=${encodeURIComponent(code)}`)
       if (res?.code === 0 && res.data) {
         const d = res.data
         terminal.writeTextSuccessResult(
@@ -34,8 +47,8 @@ const stockCommand: CommandType = {
       } else {
         terminal.writeTextErrorResult(res?.message ?? '获取失败')
       }
-    } catch (e: any) {
-      terminal.writeTextErrorResult(e?.message ?? '获取失败')
+    } catch (e) {
+      terminal.writeTextErrorResult(errMsg(e))
     }
   },
 }

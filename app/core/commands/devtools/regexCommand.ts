@@ -46,8 +46,8 @@ const regexCommand: CommandType = {
     let regex: RegExp
     try {
       regex = new RegExp(pattern, `g${ignoreCase ? 'i' : ''}${multiline ? 'm' : ''}`)
-    } catch (e: any) {
-      terminal.writeTextErrorResult(`正则无效：${e?.message}`)
+    } catch (e) {
+      terminal.writeTextErrorResult(`正则无效：${e instanceof Error ? e.message : String(e)}`)
       return
     }
     const lines: string[] = []

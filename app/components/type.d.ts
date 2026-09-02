@@ -1,3 +1,5 @@
+/// <reference types="vue" />
+
 declare namespace Terminal {
   /**
    * 输出状态
@@ -11,9 +13,9 @@ declare namespace Terminal {
     type: 'command' | 'text' | 'component'
     text?: string
     resultList?: OutputType[]
-    component?: any
+    component?: import('vue').Component
     status?: OutputStatusType
-    props?: any
+    props?: Record<string, unknown>
     collapsible?: boolean
   }
 
@@ -39,8 +41,8 @@ declare namespace Terminal {
    */
   interface ComponentOutputType extends OutputType {
     type: 'component'
-    component: any
-    props?: any
+    component: import('vue').Component
+    props?: Record<string, unknown>
   }
 
   /**

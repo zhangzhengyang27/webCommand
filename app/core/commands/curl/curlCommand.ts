@@ -13,7 +13,6 @@ const curlCommand: CommandType = {
     {
       key: 'url',
       desc: '请求地址',
-      required: true,
     },
   ],
   options: [

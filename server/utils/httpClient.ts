@@ -20,7 +20,7 @@ export async function httpGetText(url: string, headers?: Record<string, string>)
   return await res.text()
 }
 
-export async function httpGetJson<T = any>(
+export async function httpGetJson<T = unknown>(
   url: string,
   headers?: Record<string, string>,
 ): Promise<T> {

@@ -1,5 +1,6 @@
 import type { CommandType } from '../../command'
 import myAxios from '../../../utils/myAxios'
+import { errMsg } from '../../../utils/error'
 
 /**
  * 公网 IP 查询命令 (#27)
@@ -13,14 +14,14 @@ const ipCommand: CommandType = {
   options: [],
   async action(options, terminal) {
     try {
-      const res: any = await myAxios.get('/ip')
+      const res = await myAxios.get<{ ip: string }>('/ip')
       if (res?.code === 0 && res.data) {
         terminal.writeTextSuccessResult(`你的公网 IP：${res.data.ip}`)
       } else {
         terminal.writeTextErrorResult(res?.message ?? '查询失败')
       }
-    } catch (e: any) {
-      terminal.writeTextErrorResult(e?.message ?? '查询失败')
+    } catch (e) {
+      terminal.writeTextErrorResult(errMsg(e))
     }
   },
 }

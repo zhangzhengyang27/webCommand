@@ -2,6 +2,9 @@ import Components from 'unplugin-vue-components/vite'
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
 import type { SessionConfig } from 'h3'
 
+// 生产环境 DB_PASSWORD 校验见 server/plugins/check-env.ts（构建期 NODE_ENV=production，
+// 此处校验会阻断 nuxt prepare/build，故放到 Nitro 运行时启动时校验）
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   // 本项目为终端型个人应用：数据来自 localStorage / 登录态，无公开内容可收录，
@@ -28,10 +31,40 @@ export default defineNuxtConfig({
     head: {
       htmlAttrs: { lang: 'zh-CN' },
       title: 'webCommand - 极客范儿的浏览器主页',
-      link: [{ rel: 'icon', href: '/favicon.ico' }],
+      link: [
+        { rel: 'icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/png', href: '/favicon.png', sizes: '512x512' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', sizes: '180x180' },
+        { rel: 'manifest', href: '/site.webmanifest' },
+      ],
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
+        // SEO
+        {
+          name: 'description',
+          content: 'webCommand - 极客范儿的浏览器主页，集成终端、搜索、翻译、计算、IP 查询等一站式工具。',
+        },
+        { name: 'theme-color', content: '#101422' },
+        // Open Graph（社交分享：Twitter / Facebook / Telegram 等）
+        { property: 'og:type', content: 'website' },
+        { property: 'og:title', content: 'webCommand - 极客范儿的浏览器主页' },
+        {
+          property: 'og:description',
+          content: '集成终端、搜索、翻译、计算、IP 查询等一站式工具的浏览器主页',
+        },
+        { property: 'og:image', content: '/og-image.png' },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
+        { property: 'og:locale', content: 'zh_CN' },
+        // Twitter Card
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: 'webCommand - 极客范儿的浏览器主页' },
+        {
+          name: 'twitter:description',
+          content: '集成终端、搜索、翻译、计算、IP 查询等一站式工具的浏览器主页',
+        },
+        { name: 'twitter:image', content: '/og-image.png' },
       ],
       // 百度统计（对齐原 index.html）
       script: [
@@ -62,7 +95,7 @@ export default defineNuxtConfig({
     session: {
       maxAge: 60 * 60 * 24 * 30,
     } as SessionConfig,
-    // MySQL
+    // MySQL（dbPassword 默认值仅用于本地开发，生产环境已在上方强制校验）
     dbHost: process.env.DB_HOST || 'localhost',
     dbPort: Number(process.env.DB_PORT) || 3306,
     dbName: process.env.DB_NAME || 'yuindex',

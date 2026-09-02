@@ -16,10 +16,10 @@ export const useTerminalConfigStore = defineStore('terminalConfig', {
   persist: {
     key: 'terminal-config-store',
     storage: window.localStorage,
-    beforeRestore: (_context) => {
+    beforeHydrate: (_context) => {
       console.log('加载终端配置数据开始')
     },
-    afterRestore: (_context) => {
+    afterHydrate: (_context) => {
       console.log('加载终端配置数据结束')
     },
   },

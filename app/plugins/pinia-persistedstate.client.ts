@@ -8,7 +8,9 @@ export default defineNuxtPlugin((nuxtApp) => {
   const installed = (pinia as unknown as { _p?: Array<{ _isPersistedstate?: boolean }> })._p
   if (pinia && !installed?.some((p) => p?._isPersistedstate)) {
     // 标记避免重复注册
-    const plugin = piniaPluginPersistedstate as any
+    const plugin = piniaPluginPersistedstate as typeof piniaPluginPersistedstate & {
+      _isPersistedstate?: boolean
+    }
     plugin._isPersistedstate = true
     pinia.use(plugin)
   }

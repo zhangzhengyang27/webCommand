@@ -42,9 +42,9 @@ const loginCommand: CommandType = {
       terminal.writeTextErrorResult('请输入密码')
       return
     }
-    const res: any = await userLogin(username, password, remember !== false)
+    const res = await userLogin(username, password, remember !== false)
     const { setLoginUser } = useUserStore()
-    if (res?.code === 0) {
+    if (res?.code === 0 && res.data) {
       setLoginUser(res.data)
       terminal.writeTextSuccessResult(
         remember !== false ? '登录成功（已开启自动登录）' : '登录成功',

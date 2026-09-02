@@ -4,5 +4,7 @@ import { UserDataModel } from '../models/UserData'
 export default defineNitroPlugin(() => {
   UserDataModel()
     .sync()
-    .catch((e: any) => console.error('user_data 表同步失败', e?.message || e))
+    .catch((e: unknown) =>
+      console.error('user_data 表同步失败', e instanceof Error ? e.message : e),
+    )
 })

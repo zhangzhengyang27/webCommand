@@ -30,11 +30,11 @@ const jsonCommand: CommandType = {
       terminal.writeTextErrorResult('用法：json [-c] <JSON 文本>')
       return
     }
-    let parsed: any
+    let parsed: unknown
     try {
       parsed = JSON.parse(text)
-    } catch (e: any) {
-      terminal.writeTextErrorResult(`JSON 无效：${e?.message}`)
+    } catch (e) {
+      terminal.writeTextErrorResult(`JSON 无效：${e instanceof Error ? e.message : String(e)}`)
       return
     }
     const output = compact ? JSON.stringify(parsed) : JSON.stringify(parsed, null, 2)

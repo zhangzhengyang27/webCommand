@@ -2,6 +2,7 @@ import type { CommandType } from '../../../command'
 import { updateUserPassword } from '../userApi'
 import { useUserStore } from '../userStore'
 import { LOCAL_USER } from '../userConstant'
+import { errMsg } from '../../../../utils/error'
 
 /**
  * 修改密码命令（需登录并验证旧密码）
@@ -42,14 +43,14 @@ const passwdCommand: CommandType = {
       return
     }
     try {
-      const res: any = await updateUserPassword(String(oldPassword), String(newPassword))
+      const res = await updateUserPassword(String(oldPassword), String(newPassword))
       if (res?.code === 0) {
         terminal.writeTextSuccessResult('密码修改成功')
       } else {
         terminal.writeTextErrorResult(res?.message ?? '修改失败')
       }
-    } catch (e: any) {
-      terminal.writeTextErrorResult(e?.message ?? '修改失败')
+    } catch (e) {
+      terminal.writeTextErrorResult(errMsg(e))
     }
   },
 }

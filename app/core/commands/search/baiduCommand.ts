@@ -12,7 +12,6 @@ const baiduCommand: CommandType = {
     {
       key: 'word',
       desc: '搜索内容',
-      required: true,
     },
   ],
   options: [

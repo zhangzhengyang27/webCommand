@@ -38,27 +38,22 @@ const pingCommand: CommandType = {
       dest = 'https://' + dest
     }
     // 尊重用户输入的协议，不再强制把 http 转为 https
-    const startTime = new Date().getTime()
-    await Promise.race([
-      new Promise(function (resolve, reject) {
-        setTimeout(() => reject(new Error('timeout')), Number(timeout))
-      }),
-      fetch(dest, { mode: 'no-cors', cache: 'reload' }),
-    ])
-      .then((resp: any) => {
-        if (resp.ok || resp.status == 200 || resp.type == 'opaque') {
-          console.log(resp)
-          const finishTime = new Date().getTime()
-          terminal.writeTextSuccessResult('目标地址正常')
-          terminal.writeTextResult(`延迟=${(finishTime - startTime).toString()}ms`)
-        } else {
-          terminal.writeTextErrorResult('ping 不通！')
-        }
+    const startTime = Date.now()
+    try {
+      const resp = await fetch(dest, {
+        mode: 'no-cors',
+        cache: 'reload',
+        signal: AbortSignal.timeout(Number(timeout)),
       })
-      .catch((error) => {
-        console.log(error)
+      if (resp.ok || resp.status === 200 || resp.type === 'opaque') {
+        terminal.writeTextSuccessResult('目标地址正常')
+        terminal.writeTextResult(`延迟=${Date.now() - startTime}ms`)
+      } else {
         terminal.writeTextErrorResult('ping 不通！')
-      })
+      }
+    } catch {
+      terminal.writeTextErrorResult('ping 不通！')
+    }
   },
 }
 

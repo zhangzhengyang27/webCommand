@@ -14,17 +14,14 @@ const convertCommand: CommandType = {
     {
       key: 'value',
       desc: '数值',
-      required: true,
     },
     {
       key: 'from',
       desc: '原单位',
-      required: true,
     },
     {
       key: 'to',
       desc: '目标单位',
-      required: true,
     },
   ],
   options: [],

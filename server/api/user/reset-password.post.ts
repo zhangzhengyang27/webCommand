@@ -1,5 +1,6 @@
 import { findActiveUserByEmail, resetUserPassword } from '../../services/userService'
 import { verifyCode } from '../../services/passwordReset'
+import type { UserAttributes } from '../../models/User'
 import { bizHandler, BizError, ERROR_CODE } from '../../utils/response'
 import { authLimiter } from '../../utils/rateLimit'
 
@@ -10,5 +11,5 @@ export default bizHandler(async (event) => {
   if (!verifyCode(email, code)) throw new BizError(ERROR_CODE.PARAMS, '验证码错误或已过期')
   const user = await findActiveUserByEmail(email)
   if (!user) throw new BizError(ERROR_CODE.NOT_FOUND, '用户不存在')
-  return await resetUserPassword((user.toJSON() as any).id, newPassword)
+  return await resetUserPassword((user.toJSON() as UserAttributes).id, newPassword)
 })

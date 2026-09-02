@@ -1,20 +1,15 @@
 import { defineStore } from 'pinia'
 import TaskType = Todo.TaskType
-import myAxios from '../../../utils/myAxios'
-import { useUserStore } from '../user/userStore'
-
-// 云端同步防抖定时器
-let syncTimer: ReturnType<typeof setTimeout> | undefined
-// 已初始化云同步的用户 id 与订阅取消函数（换账号时需重新拉取云端数据并解除旧订阅，防止数据串写）
-let cloudSyncUserId: string | number | null = null
-let unsubscribeCloudSync: (() => void) | null = null
+import { useCloudSync } from '../../../composables/useCloudSync'
 
 // 将云端返回的字符串日期还原为 Date 对象
-function reviveTask(t: any): TaskType {
+function reviveTask(t: Record<string, unknown>): TaskType {
   return {
-    ...t,
-    createTime: t.createTime ? new Date(t.createTime) : new Date(),
-    finishTime: t.finishTime ? new Date(t.finishTime) : undefined,
+    id: String(t.id ?? ''),
+    name: String(t.name ?? ''),
+    isFinished: Boolean(t.isFinished),
+    createTime: t.createTime ? new Date(String(t.createTime)) : new Date(),
+    finishTime: t.finishTime ? new Date(String(t.finishTime)) : undefined,
   }
 }
 
@@ -30,9 +25,6 @@ function generateId(): string {
  */
 export type TaskFilter = 'all' | 'todo' | 'done'
 
-/**
- * 空间状态（类似文件系统实现）
- */
 export const useTodoStore = defineStore('todo', {
   state: () => ({
     // 当前列表筛选条件（供 delete 按显示序号定位到真实任务）
@@ -83,12 +75,6 @@ export const useTodoStore = defineStore('todo', {
   persist: {
     key: 'todo-store',
     storage: window.localStorage,
-    beforeRestore: (_context) => {
-      console.log('加载待办数据开始')
-    },
-    afterRestore: (_context) => {
-      console.log('加载待办数据结束')
-    },
   },
   actions: {
     /**
@@ -140,18 +126,6 @@ export const useTodoStore = defineStore('todo', {
       return true
     },
     /**
-     * 根据 ID 切换任务完成状态
-     * @param id
-     */
-    toggleTaskById(id: string) {
-      const index = this.taskList.findIndex((task) => task.id === id)
-      if (index === -1) {
-        return false
-      }
-      const task = this.taskList[index]!
-      return this.updateTask(index, { isFinished: !task.isFinished })
-    },
-    /**
      * 根据 ID 完成任务
      * @param id
      */
@@ -178,81 +152,53 @@ export const useTodoStore = defineStore('todo', {
      * 同步到云端（登录后）(#24)
      */
     syncToCloud() {
-      const userStore = useUserStore()
-      if (!userStore.loginUser?.id) {
-        return
-      }
-      if (syncTimer) {
-        clearTimeout(syncTimer)
-      }
-      syncTimer = setTimeout(() => {
-        myAxios
-          .post('/data/sync', {
-            type: 'todo',
-            content: JSON.stringify(this.taskList),
-          })
-          .catch((e) => console.error('todo 同步失败', e))
-      }, 800)
+      cloudSync.syncToCloud()
     },
     /**
-     * 从云端加载，与本地未同步任务合并（避免覆盖丢失）(#24)
+     * 从云端加载（合并逻辑见 cloudSync 的 merge）
      */
     async loadFromCloud() {
-      const userStore = useUserStore()
-      if (!userStore.loginUser?.id) {
-        return
-      }
-      try {
-        const res: any = await myAxios.get('/data?type=todo')
-        if (res?.code === 0 && res.data) {
-          const list = JSON.parse(res.data)
-          if (Array.isArray(list)) {
-            const cloudTasks: TaskType[] = list.map(reviveTask)
-            const cloudIds = new Set(cloudTasks.map((t) => t.id))
-            // 合并：云端任务（源为真）+ 本地独有任务（尚未同步到云端）
-            const localOnly = this.taskList.filter((t) => !cloudIds.has(t.id))
-            this.taskList = [...cloudTasks, ...localOnly]
-          }
-        }
-      } catch (e) {
-        console.error('todo 加载失败', e)
-      }
+      await cloudSync.loadFromCloud()
     },
     /**
-     * 初始化云端同步：先拉取，再订阅后续变更 (#24)
-     * 按用户幂等：同一用户重复调用不重复注册 $subscribe；换用户时先解除旧订阅再重新拉取
+     * 初始化云端同步：先拉取，再订阅后续变更（按用户幂等）
      */
     initCloudSync() {
-      const userStore = useUserStore()
-      const userId = userStore.loginUser?.id
-      if (!userId) {
-        return
-      }
-      if (cloudSyncUserId === userId) {
-        return
-      }
-      this.resetCloudSync()
-      cloudSyncUserId = userId
-      this.loadFromCloud().finally(() => {
-        unsubscribeCloudSync = this.$subscribe((_mutation, _state) => this.syncToCloud())
-      })
+      cloudSync.initCloudSync(() => this.$subscribe((_mutation, _state) => this.syncToCloud()))
     },
     /**
      * 重置云同步：解除订阅并清除初始化标记（注销时调用）
      */
     resetCloudSync() {
-      if (unsubscribeCloudSync) {
-        unsubscribeCloudSync()
-        unsubscribeCloudSync = null
-      }
-      cloudSyncUserId = null
+      cloudSync.resetCloudSync()
     },
     /**
      * 从备份导入（覆盖当前数据）
      */
-    importBackup(list: any[]) {
-      this.taskList = (Array.isArray(list) ? list : []).filter((t) => t?.name).map(reviveTask)
+    importBackup(list: unknown) {
+      const items = (Array.isArray(list) ? list : []).filter(
+        (t): t is Record<string, unknown> => typeof t === 'object' && t !== null && 'name' in t,
+      )
+      this.taskList = items.map(reviveTask)
       this.syncToCloud()
     },
+  },
+})
+
+// 云同步实例（模块级单例；store 实例通过惰性调用获取，避免循环依赖）
+const getStore = () => useTodoStore()
+
+const cloudSync = useCloudSync('todo', {
+  serialize: () => getStore().taskList,
+  merge: (data) => {
+    if (!Array.isArray(data)) return
+    const store = getStore()
+    const cloudTasks: TaskType[] = data
+      .filter((t): t is Record<string, unknown> => typeof t === 'object' && t !== null)
+      .map(reviveTask)
+    const cloudIds = new Set(cloudTasks.map((t) => t.id))
+    // 合并：云端任务（源为真）+ 本地独有任务（尚未同步到云端）
+    const localOnly = store.taskList.filter((t) => !cloudIds.has(t.id))
+    store.taskList = [...cloudTasks, ...localOnly]
   },
 })

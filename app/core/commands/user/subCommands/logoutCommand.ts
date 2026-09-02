@@ -15,7 +15,7 @@ const logoutCommand: CommandType = {
   name: '用户注销',
   options: [],
   async action(options, terminal) {
-    const res: any = await userLogout()
+    const res = await userLogout()
     const { setLoginUser } = useUserStore()
     if (res?.code === 0) {
       // 注销时解除 todo/space/note 的云端同步订阅，避免注销后的本地变更继续同步

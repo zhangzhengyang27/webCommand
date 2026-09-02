@@ -1,30 +1,40 @@
 import { proxyLimiter } from '../utils/rateLimit'
 import { httpGetJson, httpGetText } from '../utils/httpClient'
+import { bizHandler, BizError, ERROR_CODE } from '../utils/response'
+
+interface IpSource {
+  url: string
+  text?: boolean
+  pick: (d: unknown) => string
+}
 
 // 客户端公网 IP 查询（多源容错），对齐原 GET /api/ip
-export default defineEventHandler(async (event) => {
-  if (proxyLimiter.hit(event)) {
-    setResponseStatus(event, 429)
-    return { code: 40000, message: '操作过于频繁，请稍后再试', data: null }
-  }
-  const sources: Array<{
-    url: string
-    text?: boolean
-    pick: (d: any) => string
-  }> = [
-    { url: 'https://api.ip.sb/jsonip', pick: (d) => d.ip },
-    { url: 'https://api.ipify.org?format=json', pick: (d) => d.ip },
-    { url: 'http://ip-api.com/json/?fields=query', pick: (d) => d.query },
-    { url: 'https://ifconfig.me/ip', text: true, pick: (d) => d.trim() },
+export default bizHandler(async (event) => {
+  if (proxyLimiter.hit(event))
+    throw new BizError(ERROR_CODE.RATE_LIMIT, '操作过于频繁，请稍后再试', 429)
+  const sources: IpSource[] = [
+    {
+      url: 'https://api.ip.sb/jsonip',
+      pick: (d) => String((d as Record<string, unknown>).ip ?? ''),
+    },
+    {
+      url: 'https://api.ipify.org?format=json',
+      pick: (d) => String((d as Record<string, unknown>).ip ?? ''),
+    },
+    {
+      url: 'http://ip-api.com/json/?fields=query',
+      pick: (d) => String((d as Record<string, unknown>).query ?? ''),
+    },
+    { url: 'https://ifconfig.me/ip', text: true, pick: (d) => String(d).trim() },
   ]
   for (const s of sources) {
     try {
-      const ip = s.text ? s.pick(await httpGetText(s.url)) : s.pick(await httpGetJson<any>(s.url))
-      if (ip) return { code: 0, data: { ip } }
-    } catch (e: any) {
-      console.error('ip source failed:', s.url, e?.message || e)
+      const raw = s.text ? await httpGetText(s.url) : await httpGetJson(s.url)
+      const ip = s.pick(raw)
+      if (ip) return { ip }
+    } catch (e) {
+      console.error('ip source failed:', s.url, e)
     }
   }
-  setResponseStatus(event, 502)
-  return { code: 502, message: '获取 IP 失败', data: null }
+  throw new BizError(ERROR_CODE.THIRD_PART, '获取 IP 失败', 502)
 })

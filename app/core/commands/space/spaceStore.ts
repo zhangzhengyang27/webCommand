@@ -1,13 +1,6 @@
 import { defineStore } from 'pinia'
 import type { SpaceItemType, SpaceType } from './spaceCommands'
-import myAxios from '../../../utils/myAxios'
-import { useUserStore } from '../user/userStore'
-
-// 云端同步防抖定时器
-let spaceSyncTimer: ReturnType<typeof setTimeout> | undefined
-// 已初始化云同步的用户 id 与订阅取消函数（换账号时需重新拉取云端数据并解除旧订阅，防止数据串写）
-let spaceSyncUserId: string | number | null = null
-let unsubscribeSpaceSync: (() => void) | null = null
+import { useCloudSync } from '../../../composables/useCloudSync'
 
 /**
  * 空间状态（类似文件系统实现）
@@ -31,12 +24,6 @@ export const useSpaceStore = defineStore('space', {
   persist: {
     key: 'space-store',
     storage: window.localStorage,
-    beforeRestore: (_context) => {
-      console.log('加载空间数据开始')
-    },
-    afterRestore: (_context) => {
-      console.log('加载空间数据结束')
-    },
   },
   actions: {
     /**
@@ -220,97 +207,74 @@ export const useSpaceStore = defineStore('space', {
      * 同步到云端（登录后）(#25)
      */
     syncToCloud() {
-      const userStore = useUserStore()
-      if (!userStore.loginUser?.id) {
-        return
-      }
-      if (spaceSyncTimer) {
-        clearTimeout(spaceSyncTimer)
-      }
-      spaceSyncTimer = setTimeout(() => {
-        myAxios
-          .post('/data/sync', {
-            type: 'space',
-            content: JSON.stringify({
-              space: this.space,
-              currentDir: this.currentDir,
-            }),
-          })
-          .catch((e) => console.error('space 同步失败', e))
-      }, 800)
+      cloudSync.syncToCloud()
     },
     /**
-     * 从云端加载，与本地未同步条目合并（避免覆盖丢失）(#25)
+     * 从云端加载（合并逻辑见 cloudSync 的 merge）
      */
     async loadFromCloud() {
-      const userStore = useUserStore()
-      if (!userStore.loginUser?.id) {
-        return
-      }
-      try {
-        const res: any = await myAxios.get('/data?type=space')
-        if (res?.code === 0 && res.data) {
-          const data = JSON.parse(res.data)
-          if (data && data.space) {
-            // 合并：以云端为基准，保留云端没有的本地条目
-            const merged = { ...data.space }
-            for (const k in this.space) {
-              if (!merged[k]) {
-                merged[k] = this.space[k]
-              }
-            }
-            if (!merged['/']) {
-              merged['/'] = this.space['/']
-            }
-            this.space = merged
-            this.currentDir = data.currentDir || '/'
-          }
-        }
-      } catch (e) {
-        console.error('space 加载失败', e)
-      }
+      await cloudSync.loadFromCloud()
     },
     /**
      * 初始化云端同步：先拉取，再订阅后续变更 (#25)
      * 按用户幂等：同一用户重复调用不重复注册 $subscribe；换用户时先解除旧订阅再重新拉取
      */
     initCloudSync() {
-      const userStore = useUserStore()
-      const userId = userStore.loginUser?.id
-      if (!userId) {
-        return
-      }
-      if (spaceSyncUserId === userId) {
-        return
-      }
-      this.resetCloudSync()
-      spaceSyncUserId = userId
-      this.loadFromCloud().finally(() => {
-        unsubscribeSpaceSync = this.$subscribe(() => this.syncToCloud())
-      })
+      cloudSync.initCloudSync(() => this.$subscribe(() => this.syncToCloud()))
     },
     /**
      * 重置云同步：解除订阅并清除初始化标记（注销时调用）
      */
     resetCloudSync() {
-      if (unsubscribeSpaceSync) {
-        unsubscribeSpaceSync()
-        unsubscribeSpaceSync = null
-      }
-      spaceSyncUserId = null
+      cloudSync.resetCloudSync()
     },
     /**
      * 从备份导入（覆盖当前数据）
      */
-    importBackup(data: any) {
-      if (data?.space && typeof data.space === 'object') {
-        this.space = data.space
+    importBackup(data: unknown) {
+      if (typeof data !== 'object' || data === null) return
+      const obj = data as Record<string, unknown>
+      if (obj.space && typeof obj.space === 'object') {
+        this.space = obj.space as SpaceType
       }
-      if (typeof data?.currentDir === 'string') {
-        this.currentDir = data.currentDir
+      if (typeof obj.currentDir === 'string') {
+        this.currentDir = obj.currentDir
       }
       this.syncToCloud()
     },
+  },
+})
+
+// 云同步实例（模块级单例；store 实例通过惰性调用获取，避免循环依赖）
+const getStore = () => useSpaceStore()
+
+const cloudSync = useCloudSync('space', {
+  serialize: () => {
+    const store = getStore()
+    return {
+      space: store.space,
+      currentDir: store.currentDir,
+    }
+  },
+  merge: (data) => {
+    if (!data || typeof data !== 'object') return
+    const cloud = data as { space?: SpaceType; currentDir?: string }
+    if (!cloud.space) return
+    const store = getStore()
+    // 合并：以云端为基准，保留云端没有的本地条目
+    const merged = { ...cloud.space }
+    for (const k in store.space) {
+      const item = store.space[k]
+      if (item && !merged[k]) {
+        merged[k] = item
+      }
+    }
+    if (!merged['/']) {
+      const root = store.space['/']
+      if (root) merged['/'] = root
+    }
+    store.space = merged
+    store.currentDir = cloud.currentDir || '/'
   },
 })
 

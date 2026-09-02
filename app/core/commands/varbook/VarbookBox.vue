@@ -1,5 +1,5 @@
 <template>
-  <div :class="['main', variablesTable.source ? 'success' : 'warning']">
+  <div :class="['main', variablesTable?.source ? 'success' : 'warning']">
     <a-spin
       :spinning="!loadOK"
       :style="{
@@ -33,10 +33,12 @@ interface VariableBoxProps {
   searchText: string
 }
 
+type NamedVariableTable = ReturnType<typeof parseNamedVariable>
+
 const props = defineProps<VariableBoxProps>()
 
 const { searchText } = toRefs(props)
-const variablesTable = ref<any>({})
+const variablesTable = ref<NamedVariableTable | null>(null)
 const loadOK = ref(false)
 const output = reactive<OutputType>({
   type: 'text',
@@ -45,7 +47,7 @@ const output = reactive<OutputType>({
 })
 
 getNamedVariables(searchText.value)
-  .then((res: any) => {
+  .then((res) => {
     const { code, data, msg } = res
     if (code === 200) {
       variablesTable.value = parseNamedVariable(data.namedVariables)

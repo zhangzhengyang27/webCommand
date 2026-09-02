@@ -19,8 +19,8 @@ export default bizHandler(async (event) => {
       subject: 'YuIndex 找回密码验证码',
       text: `你的验证码是 ${code}，10 分钟内有效。若非本人操作请忽略本邮件。`,
     })
-  } catch (e: any) {
-    console.error('send reset code mail failed:', e?.message || e)
+  } catch (e: unknown) {
+    console.error('send reset code mail failed:', e instanceof Error ? e.message : e)
     throw new BizError(ERROR_CODE.THIRD_PART, '邮件发送失败，请稍后再试')
   }
   return true

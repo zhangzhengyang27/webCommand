@@ -1,5 +1,6 @@
 import type { CommandType } from '../../../command'
 import { resetPassword, sendResetCode } from '../userApi'
+import { errMsg } from '../../../../utils/error'
 
 /**
  * 找回密码命令（邮箱验证码两步流程）
@@ -42,15 +43,15 @@ const resetCommand: CommandType = {
     // 第一步：只传邮箱 => 发送验证码
     if (!code || !newPassword) {
       try {
-        const res: any = await sendResetCode(String(email))
+        const res = await sendResetCode(String(email))
         if (res?.code === 0) {
           terminal.writeTextSuccessResult(`验证码已发送至 ${email}，10 分钟内有效`)
           terminal.writeTextResult('收到验证码后执行：reset -e <邮箱> -c <验证码> -n <新密码>')
         } else {
           terminal.writeTextErrorResult(res?.message ?? '验证码发送失败')
         }
-      } catch (e: any) {
-        terminal.writeTextErrorResult(e?.message ?? '验证码发送失败')
+      } catch (e) {
+        terminal.writeTextErrorResult(errMsg(e))
       }
       return
     }
@@ -60,14 +61,14 @@ const resetCommand: CommandType = {
       return
     }
     try {
-      const res: any = await resetPassword(String(email), String(code), String(newPassword))
+      const res = await resetPassword(String(email), String(code), String(newPassword))
       if (res?.code === 0) {
         terminal.writeTextSuccessResult('密码重置成功，请使用新密码登录')
       } else {
         terminal.writeTextErrorResult(res?.message ?? '重置失败')
       }
-    } catch (e: any) {
-      terminal.writeTextErrorResult(e?.message ?? '重置失败')
+    } catch (e) {
+      terminal.writeTextErrorResult(errMsg(e))
     }
   },
 }

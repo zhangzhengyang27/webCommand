@@ -1,0 +1,6 @@
+# webCommand - 个人终端主页
+# 允许所有爬虫抓取首页（SPA 应用，仅公开首页信息）
+# 数据均存储于用户本地 localStorage 或需登录后的服务端，无公开内容可收录
+
+User-agent: *
+Allow: /

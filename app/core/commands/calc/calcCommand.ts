@@ -14,7 +14,6 @@ const calcCommand: CommandType = {
     {
       key: 'expression',
       desc: '算术表达式',
-      required: true,
     },
   ],
   options: [],

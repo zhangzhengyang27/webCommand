@@ -26,7 +26,7 @@ const ok = ref(false)
 
 const doImport = () => {
   message.value = ''
-  let backup: any
+  let backup: unknown
   try {
     backup = JSON.parse(text.value)
   } catch {
@@ -34,13 +34,17 @@ const doImport = () => {
     ok.value = false
     return
   }
-  // 兼容整体备份对象与直接传 data 对象两种形式
-  const data = backup?.app === 'webCommand' ? backup.data : backup
-  if (!data || typeof data !== 'object') {
+  if (typeof backup !== 'object' || backup === null) {
     message.value = '备份格式不正确'
     ok.value = false
     return
   }
+  const root = backup as Record<string, unknown>
+  // 兼容整体备份对象与直接传 data 对象两种形式
+  const data =
+    root.app === 'webCommand' && typeof root.data === 'object' && root.data !== null
+      ? (root.data as Record<string, unknown>)
+      : root
   importing.value = true
   try {
     const counts: string[] = []
@@ -52,8 +56,8 @@ const doImport = () => {
       useSpaceStore().importBackup(data.space)
       counts.push('空间')
     }
-    if (data.custom && typeof data.custom === 'object') {
-      useCustomCommandStore().importBackup(data.custom)
+    if (data.custom && typeof data.custom === 'object' && data.custom !== null) {
+      useCustomCommandStore().importBackup(data.custom as Record<string, string>)
       counts.push(`自定义命令 ${Object.keys(data.custom).length} 个`)
     }
     if (Array.isArray(data.note)) {

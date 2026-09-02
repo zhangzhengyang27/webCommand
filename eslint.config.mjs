@@ -7,9 +7,9 @@ export default withNuxt(
   prettier,
   {
     rules: {
-      // 存量代码中存在大量处理第三方 API 响应 / 数据库返回的 any，
-      // 暂降级为 warning（提示但不阻断），后续逐步收敛为 error。
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // 前后端 any 已全部收敛，恢复默认 error 防止回退。
+      // 若后续新增代码确需处理动态第三方数据，请使用 unknown + 类型收窄。
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
 )

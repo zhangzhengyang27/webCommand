@@ -46,12 +46,12 @@ const registerCommand: CommandType = {
       terminal.writeTextErrorResult('请输入邮箱')
       return
     }
-    const res: any = await userRegister(username, password, email)
+    const res = await userRegister(username, password, email)
     if (res?.code === 0) {
       // 注册成功后自动登录
-      const loginRes: any = await userLogin(username, password)
+      const loginRes = await userLogin(username, password)
       const { setLoginUser } = useUserStore()
-      if (loginRes?.code === 0) {
+      if (loginRes?.code === 0 && loginRes.data) {
         setLoginUser(loginRes.data)
         terminal.writeTextSuccessResult('注册成功，已自动登录')
       } else {

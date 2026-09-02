@@ -45,16 +45,30 @@ export const checkSearchText = (searchText: string, terminal: TerminalType): str
   return newSearchText
 }
 
+export interface NamedVariable {
+  style: string
+  key: string
+  data: string | undefined
+}
+
+export interface NamedVariableColumns {
+  title: string
+  dataIndex: string
+  key: string
+  width?: string
+  align?: 'center' | 'left' | 'right'
+}
+
 export const parseNamedVariable = (
-  namedVariables: any,
+  namedVariables: Record<string, string>,
 ): {
-  columns: any[]
-  source: any[]
+  columns: NamedVariableColumns[]
+  source: NamedVariable[]
 } => {
-  const source = []
+  const source: NamedVariable[] = []
   for (const key in STYLE_LANG) {
     source.push({
-      style: STYLE_LANG[key],
+      style: STYLE_LANG[key] ?? '',
       key,
       data: namedVariables[key],
     })

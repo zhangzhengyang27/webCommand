@@ -4,10 +4,16 @@ import type { CommandOptionType, CommandType } from './command'
 import TerminalType = Terminal.TerminalType
 import helpCommand from './commands/terminal/help/helpCommand'
 import { useCustomCommandStore } from './commands/custom/customStore'
-const getopts: (
+import { errMsg } from '../utils/error'
+
+type GetoptsFn = (
   argv: string[],
   options?: getoptsNamespace.Options,
-) => getoptsNamespace.ParsedOptions = (getoptsNamespace as any).default || getoptsNamespace
+) => getoptsNamespace.ParsedOptions
+
+// getopts 为 CJS 模块：ESM 下 namespace.default 可能是函数本身，兜底取 namespace
+const getopts: GetoptsFn = ((getoptsNamespace as unknown as { default?: unknown }).default ??
+  getoptsNamespace) as GetoptsFn
 
 /**
  * 执行命令
@@ -32,7 +38,7 @@ export const doCommandExecute = async (
     return
   }
   // 解析文本，得到命令
-  const command: CommandType = getCommand(text, parentCommand)
+  const command = getCommand(text, parentCommand)
   if (!command) {
     // 自定义命令回退：输入的名称匹配用户自定义的快捷命令时，执行其对应文本 (#73)
     const token = (text.split(' ', 1)[0] ?? '').toLowerCase()
@@ -71,7 +77,7 @@ export const doCommandExecute = async (
  * @param text
  * @param parentCommand
  */
-const getCommand = (text: string, parentCommand?: CommandType): CommandType => {
+const getCommand = (text: string, parentCommand?: CommandType): CommandType | undefined => {
   let func = text.split(' ', 1)[0] ?? ''
   func = func.toLowerCase() // 大小写无关
   let commands = commandMap
@@ -94,7 +100,7 @@ const getCommand = (text: string, parentCommand?: CommandType): CommandType => {
       return cmd
     }
   }
-  return undefined as unknown as CommandType
+  return undefined
 }
 
 /**
@@ -122,7 +128,8 @@ const doParse = (
       options.alias[key] = alias
     }
     options[type === 'boolean' ? 'boolean' : 'string']?.push(key)
-    if (defaultValue && options.default) {
+    // 默认值为空字符串（如 curl 的 maxLength）时也应生效，故用 !== undefined 判断
+    if (defaultValue !== undefined && options.default) {
       options.default[key] = defaultValue
     }
   })
@@ -154,16 +161,45 @@ const doAction = async (
     const newOptions = { ...options, _: [command.func] }
     try {
       await helpCommand.action(newOptions, terminal, parentCommand)
-    } catch (e: any) {
-      terminal.writeTextErrorResult(e?.message || '帮助命令执行出错')
+    } catch (e) {
+      terminal.writeTextErrorResult(errMsg(e) || '帮助命令执行出错')
       console.error(e)
     }
     return
   }
+  // 自动校验必填位置参数（消费 params[].required 声明，避免每个命令手写重复校验）
+  if (!validateRequiredParams(command, options, terminal)) {
+    return
+  }
   try {
     await command.action(options, terminal, parentCommand)
-  } catch (e: any) {
-    terminal.writeTextErrorResult(e?.message || '命令执行出错')
+  } catch (e) {
+    terminal.writeTextErrorResult(errMsg(e) || '命令执行出错')
     console.error(e)
   }
+}
+
+/**
+ * 校验命令必填位置参数。
+ * 有子命令的命令其 params 描述的是子命令名（如 user / todo），
+ * 由子命令自身的 doCommandExecute 递归校验，此处跳过。
+ */
+const validateRequiredParams = (
+  command: CommandType,
+  options: getoptsNamespace.ParsedOptions,
+  terminal: TerminalType,
+): boolean => {
+  if (command.subCommands && Object.keys(command.subCommands).length > 0) {
+    return true
+  }
+  const requiredParams = command.params?.filter((p) => p.required) ?? []
+  if (requiredParams.length === 0) {
+    return true
+  }
+  if (options._.length >= requiredParams.length) {
+    return true
+  }
+  const missing = requiredParams.map((p) => p.key).join('、')
+  terminal.writeTextErrorResult(`缺少参数：${missing}，请使用 ${command.func} --help 查看用法`)
+  return false
 }

@@ -1,7 +1,7 @@
 import { Op, UniqueConstraintError } from 'sequelize'
 import bcrypt from 'bcryptjs'
 import md5 from 'md5'
-import { UserModel, toSafeUser, type SafeUser } from '../models/User'
+import { UserModel, toSafeUser, type SafeUser, type UserAttributes } from '../models/User'
 import { BizError, ERROR_CODE } from '../utils/response'
 
 // 历史密码加盐（仅兼容旧用户）
@@ -42,8 +42,8 @@ export async function userRegister(
       email,
       status: 0,
       isDelete: 0,
-    } as any)
-    return (user as any).id
+    } as UserAttributes)
+    return user.getDataValue('id')
   } catch (e) {
     if (e instanceof UniqueConstraintError)
       throw new BizError(ERROR_CODE.PARAMS, '该用户名或邮箱已被注册')
@@ -59,7 +59,7 @@ export async function verifyCredentials(username: string, password: string): Pro
   if (!username || !password) throw new BizError(ERROR_CODE.PARAMS, '参数错误')
   const user = await UserModel().findOne({ where: { username } })
   if (!user) throw new BizError(ERROR_CODE.NOT_FOUND, '用户不存在或密码错误')
-  const attrs = user.toJSON() as any
+  const attrs = user.toJSON() as UserAttributes
   if (attrs.isDelete) throw new BizError(ERROR_CODE.NOT_FOUND, '用户不存在或密码错误')
   if (attrs.status !== 0) throw new BizError(ERROR_CODE.NO_AUTH, '账号已被封禁')
 
@@ -79,7 +79,7 @@ export async function verifyCredentials(username: string, password: string): Pro
 export async function getLoginUserById(id: number | string): Promise<SafeUser> {
   if (!id) throw new BizError(ERROR_CODE.NO_AUTH, '未登录')
   const user = await UserModel().findByPk(id)
-  if (!user || (user.toJSON() as any).isDelete)
+  if (!user || (user.toJSON() as UserAttributes).isDelete)
     throw new BizError(ERROR_CODE.NOT_FOUND, '找不到该用户')
   return toSafeUser(user)
 }
@@ -93,9 +93,9 @@ export async function updateUserPassword(
   if (!oldPassword || !newPassword) throw new BizError(ERROR_CODE.PARAMS, '参数错误')
   if (newPassword.length < 6) throw new BizError(ERROR_CODE.PARAMS, '密码至少 6 位')
   const user = await UserModel().findByPk(userId)
-  if (!user || (user.toJSON() as any).isDelete)
+  if (!user || (user.toJSON() as UserAttributes).isDelete)
     throw new BizError(ERROR_CODE.NOT_FOUND, '找不到该用户')
-  const attrs = user.toJSON() as any
+  const attrs = user.toJSON() as UserAttributes
   if (!(await verifyPassword(oldPassword, attrs.password)))
     throw new BizError(ERROR_CODE.PARAMS, '旧密码错误')
   if (await verifyPassword(newPassword, attrs.password))
