@@ -4,3 +4,19 @@
 
 User-agent: *
 Allow: /
+
+# AI 生成式引擎（GEO）：允许抓取以被 AI 搜索引用
+User-agent: GPTBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Sitemap（部署后如域名不同请更新）
+Sitemap: https://command.zhangzhengyang.com/sitemap.xml

@@ -5,6 +5,10 @@ import type { SessionConfig } from 'h3'
 // 生产环境 DB_PASSWORD 校验见 server/plugins/check-env.ts（构建期 NODE_ENV=production，
 // 此处校验会阻断 nuxt prepare/build，故放到 Nitro 运行时启动时校验）
 
+// 站点绝对地址（SEO：canonical / og:url / og:image 需要绝对 URL）
+// 部署时通过环境变量 NUXT_PUBLIC_SITE_URL 提供，未配置时回退为空（使用相对路径）
+const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || '').replace(/\/+$/, '')
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   // 本项目为终端型个人应用：数据来自 localStorage / 登录态，无公开内容可收录，
@@ -36,6 +40,10 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/png', href: '/favicon.png', sizes: '512x512' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', sizes: '180x180' },
         { rel: 'manifest', href: '/site.webmanifest' },
+        // canonical（SEO：指定权威页面，防止重复收录）
+        ...(siteUrl
+          ? [{ rel: 'canonical' as const, href: `${siteUrl}/` }]
+          : []),
       ],
       meta: [
         { charset: 'utf-8' },
@@ -53,9 +61,13 @@ export default defineNuxtConfig({
           property: 'og:description',
           content: '集成终端、搜索、翻译、计算、IP 查询等一站式工具的浏览器主页',
         },
-        { property: 'og:image', content: '/og-image.png' },
+        // og:image / og:url 使用绝对 URL（社交平台抓取器不支持相对路径）
+        { property: 'og:image', content: siteUrl ? `${siteUrl}/og-image.png` : '/og-image.png' },
         { property: 'og:image:width', content: '1200' },
         { property: 'og:image:height', content: '630' },
+        { property: 'og:image:alt', content: 'webCommand 终端风格浏览器主页' },
+        ...(siteUrl ? [{ property: 'og:url', content: `${siteUrl}/` }] : []),
+        { property: 'og:site_name', content: 'webCommand' },
         { property: 'og:locale', content: 'zh_CN' },
         // Twitter Card
         { name: 'twitter:card', content: 'summary_large_image' },
@@ -64,13 +76,73 @@ export default defineNuxtConfig({
           name: 'twitter:description',
           content: '集成终端、搜索、翻译、计算、IP 查询等一站式工具的浏览器主页',
         },
-        { name: 'twitter:image', content: '/og-image.png' },
+        { name: 'twitter:image', content: siteUrl ? `${siteUrl}/og-image.png` : '/og-image.png' },
       ],
       // 百度统计（对齐原 index.html）
       script: [
         {
           innerHTML: `var _hmt = _hmt || [];(function(){var hm=document.createElement("script");hm.src="https://hm.baidu.com/hm.js?f3cd8238138d11b92f82f00e78961aa9";var s=document.getElementsByTagName("script")[0];s.parentNode.insertBefore(hm,s);})();`,
           type: 'text/javascript',
+        },
+        // JSON-LD 结构化数据（SEO / GEO：WebSite + SoftwareApplication + FAQ）
+        {
+          type: 'application/ld+json',
+          innerHTML: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'webCommand',
+            alternateName: 'webCommand 极客范儿的浏览器主页',
+            url: siteUrl ? `${siteUrl}/` : 'https://command.zhangzhengyang.com/',
+            description:
+              'webCommand - 极客范儿的浏览器主页，集成终端、搜索、翻译、计算、IP 查询等一站式工具。',
+            inLanguage: 'zh-CN',
+          }),
+        },
+        {
+          type: 'application/ld+json',
+          innerHTML: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareApplication',
+            name: 'webCommand',
+            operatingSystem: 'Web',
+            applicationCategory: 'UtilitiesApplication',
+            description: '集成终端、搜索、翻译、计算、IP 查询等一站式工具的极客浏览器主页',
+            offers: { '@type': 'Offer', price: '0', priceCurrency: 'CNY' },
+            inLanguage: 'zh-CN',
+          }),
+        },
+        {
+          type: 'application/ld+json',
+          innerHTML: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: 'webCommand 是什么？',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'webCommand 是一个极客风格的浏览器主页，通过终端命令交互，集成了搜索、翻译、计算、IP 查询、天气、新闻、股票、待办事项、笔记等一站式工具，支持登录后云同步数据。',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'webCommand 如何使用？',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: '打开首页后在终端输入框中输入 help 命令，即可查看所有可用命令的列表和使用说明。',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'webCommand 需要注册登录吗？',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: '大多数工具（搜索、翻译、计算、IP 查询等）无需登录即可使用；注册登录后可获得待办、笔记、空间等数据的云端同步能力。',
+                },
+              },
+            ],
+          }),
         },
       ],
     },
@@ -115,6 +187,8 @@ export default defineNuxtConfig({
     public: {
       // 前端 API 基地址（对齐原 VITE_API_BASE_URL，默认同源 /api）
       apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || '/api',
+      // 站点绝对地址（SEO canonical / og 标签），如 https://example.com
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || '',
     },
   },
 
