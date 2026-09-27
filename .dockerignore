@@ -1,0 +1,14 @@
+# 构建产物 .output 是运行时唯一依赖，其余内容不需要进镜像。
+# 注意：.output 必须保留（Dockerfile 直接 node .output/server/index.mjs）。
+.git
+.env
+.env.*
+!.env.example
+docker-compose.yml
+node_modules
+web
+.nuxt
+.data
+.nitro
+*.log
+.DS_Store

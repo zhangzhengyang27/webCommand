@@ -10,3 +10,8 @@ package-lock.json
 yarn.lock
 # unplugin-vue-components 自动生成，格式由生成器控制
 app/components.d.ts
+# dotenv 无 prettier 解析器
+.env
+.env.*
+# shell 脚本不在 prettier 解析范围内
+scripts/*.sh

@@ -41,9 +41,7 @@ export default defineNuxtConfig({
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', sizes: '180x180' },
         { rel: 'manifest', href: '/site.webmanifest' },
         // canonical（SEO：指定权威页面，防止重复收录）
-        ...(siteUrl
-          ? [{ rel: 'canonical' as const, href: `${siteUrl}/` }]
-          : []),
+        ...(siteUrl ? [{ rel: 'canonical' as const, href: `${siteUrl}/` }] : []),
       ],
       meta: [
         { charset: 'utf-8' },
@@ -51,7 +49,7 @@ export default defineNuxtConfig({
         // SEO
         {
           name: 'description',
-          content: 'webCommand - 极客范儿的浏览器主页，集成终端、搜索、翻译、计算、IP 查询等一站式工具。',
+          content: 'webCommand - 极客范儿的浏览器主页，集成终端、搜索、计算、IP 查询等一站式工具。',
         },
         { name: 'theme-color', content: '#101422' },
         // Open Graph（社交分享：Twitter / Facebook / Telegram 等）
@@ -59,7 +57,7 @@ export default defineNuxtConfig({
         { property: 'og:title', content: 'webCommand - 极客范儿的浏览器主页' },
         {
           property: 'og:description',
-          content: '集成终端、搜索、翻译、计算、IP 查询等一站式工具的浏览器主页',
+          content: '集成终端、搜索、计算、IP 查询等一站式工具的浏览器主页',
         },
         // og:image / og:url 使用绝对 URL（社交平台抓取器不支持相对路径）
         { property: 'og:image', content: siteUrl ? `${siteUrl}/og-image.png` : '/og-image.png' },
@@ -74,7 +72,7 @@ export default defineNuxtConfig({
         { name: 'twitter:title', content: 'webCommand - 极客范儿的浏览器主页' },
         {
           name: 'twitter:description',
-          content: '集成终端、搜索、翻译、计算、IP 查询等一站式工具的浏览器主页',
+          content: '集成终端、搜索、计算、IP 查询等一站式工具的浏览器主页',
         },
         { name: 'twitter:image', content: siteUrl ? `${siteUrl}/og-image.png` : '/og-image.png' },
       ],
@@ -83,6 +81,12 @@ export default defineNuxtConfig({
         {
           innerHTML: `var _hmt = _hmt || [];(function(){var hm=document.createElement("script");hm.src="https://hm.baidu.com/hm.js?f3cd8238138d11b92f82f00e78961aa9";var s=document.getElementsByTagName("script")[0];s.parentNode.insertBefore(hm,s);})();`,
           type: 'text/javascript',
+        },
+        // Umami 网站访问分析
+        {
+          src: 'https://analytics.zhangzhengyang.com/script.js',
+          defer: true,
+          'data-website-id': '13f188fd-07d3-43d2-8114-2f69543b7706',
         },
         // JSON-LD 结构化数据（SEO / GEO：WebSite + SoftwareApplication + FAQ）
         {
@@ -94,7 +98,7 @@ export default defineNuxtConfig({
             alternateName: 'webCommand 极客范儿的浏览器主页',
             url: siteUrl ? `${siteUrl}/` : 'https://command.zhangzhengyang.com/',
             description:
-              'webCommand - 极客范儿的浏览器主页，集成终端、搜索、翻译、计算、IP 查询等一站式工具。',
+              'webCommand - 极客范儿的浏览器主页，集成终端、搜索、计算、IP 查询等一站式工具。',
             inLanguage: 'zh-CN',
           }),
         },
@@ -106,7 +110,7 @@ export default defineNuxtConfig({
             name: 'webCommand',
             operatingSystem: 'Web',
             applicationCategory: 'UtilitiesApplication',
-            description: '集成终端、搜索、翻译、计算、IP 查询等一站式工具的极客浏览器主页',
+            description: '集成终端、搜索、计算、IP 查询等一站式工具的极客浏览器主页',
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'CNY' },
             inLanguage: 'zh-CN',
           }),
@@ -122,7 +126,7 @@ export default defineNuxtConfig({
                 name: 'webCommand 是什么？',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'webCommand 是一个极客风格的浏览器主页，通过终端命令交互，集成了搜索、翻译、计算、IP 查询、天气、新闻、股票、待办事项、笔记等一站式工具，支持登录后云同步数据。',
+                  text: 'webCommand 是一个极客风格的浏览器主页，通过终端命令交互，集成了搜索、计算、IP 查询、天气、新闻、股票、待办事项、笔记等一站式工具，支持登录后云同步数据。',
                 },
               },
               {
@@ -138,7 +142,7 @@ export default defineNuxtConfig({
                 name: 'webCommand 需要注册登录吗？',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: '大多数工具（搜索、翻译、计算、IP 查询等）无需登录即可使用；注册登录后可获得待办、笔记、空间等数据的云端同步能力。',
+                  text: '大多数工具（搜索、计算、IP 查询等）无需登录即可使用；注册登录后可获得待办、笔记、空间等数据的云端同步能力。',
                 },
               },
             ],
@@ -167,23 +171,24 @@ export default defineNuxtConfig({
     session: {
       maxAge: 60 * 60 * 24 * 30,
     } as SessionConfig,
-    // MySQL（dbPassword 默认值仅用于本地开发，生产环境已在上方强制校验）
-    dbHost: process.env.DB_HOST || 'localhost',
-    dbPort: Number(process.env.DB_PORT) || 3306,
-    dbName: process.env.DB_NAME || 'yuindex',
-    dbUser: process.env.DB_USER || 'root',
-    dbPassword: process.env.DB_PASSWORD || 'root1234',
-    // 百度翻译
-    baiduAppid: process.env.BAIDU_FANYI_APPID || '',
-    baiduKey: process.env.BAIDU_FANYI_KEY || '',
+    // MySQL：这里只保留「非敏感的开发默认值」，不要在构建期读 process.env。
+    // nuxt build 会把这些值直接烘进 .output，使构建产物本身成为带凭证的对象
+    // （内网地址 + 明文口令），传给 NAS / 推镜像就等于泄露。
+    // 运行期取值统一由 server/utils/dbConfig.ts 按 NUXT_DB_* > 裸名 DB_* 解析。
+    dbHost: 'localhost',
+    dbPort: 3306,
+    dbName: 'webCommand',
+    dbUser: 'root',
+    // 生产必须由运行期环境变量提供，缺失时 server/plugins/check-env.ts 启动即报错
+    dbPassword: '',
     // SMTP（找回密码）
-    smtpHost: process.env.SMTP_HOST || '',
-    smtpPort: Number(process.env.SMTP_PORT) || 465,
-    smtpUser: process.env.SMTP_USER || '',
-    smtpPass: process.env.SMTP_PASS || '',
-    smtpFrom: process.env.SMTP_FROM || '',
-    // 是否信任反向代理的 x-forwarded-for（限流取真实 IP）
-    trustProxy: process.env.TRUST_PROXY === 'true',
+    smtpHost: '',
+    smtpPort: 465,
+    smtpUser: '',
+    smtpPass: '',
+    smtpFrom: '',
+    // 是否信任反向代理的 x-forwarded-for（限流取真实 IP）；运行期用 NUXT_TRUST_PROXY 开启
+    trustProxy: false,
     public: {
       // 前端 API 基地址（对齐原 VITE_API_BASE_URL，默认同源 /api）
       apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || '/api',

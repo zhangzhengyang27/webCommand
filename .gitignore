@@ -6,3 +6,14 @@ node_modules
 *.log
 .env
 .DS_Store
+
+# 含生产口令的部署编排文件，不入库（模板见 docker-compose.example.yml）
+docker-compose.yml
+# 旧前端工程残留目录
+web/
+# 数据库备份产物与部署脚本的本地密钥文件
+backups/
+scripts/deploy.env
+# 本机测试库的凭据文件，含口令，不入库
+.env.test
+scripts/init-test-db.sql

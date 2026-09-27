@@ -1,4 +1,5 @@
 import { Sequelize } from 'sequelize'
+import { resolveDbConfig } from './appConfig'
 
 let sequelize: Sequelize | null = null
 
@@ -8,10 +9,10 @@ let sequelize: Sequelize | null = null
  */
 export function useDb(): Sequelize {
   if (sequelize) return sequelize
-  const c = useRuntimeConfig()
-  sequelize = new Sequelize(c.dbName, c.dbUser, c.dbPassword, {
-    host: c.dbHost,
-    port: Number(c.dbPort),
+  const db = resolveDbConfig()
+  sequelize = new Sequelize(db.name, db.user, db.password, {
+    host: db.host,
+    port: db.port,
     dialect: 'mysql',
     logging: false,
   })

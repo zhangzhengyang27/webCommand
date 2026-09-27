@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { boolSetting } from './appConfig'
 
 interface RateLimiter {
   /** 返回 true 表示已被限流 */
@@ -35,7 +36,10 @@ function recordHit(map: Map<string, number[]>, key: string, windowMs: number): n
 export function getClientIp(event: H3Event): string {
   const cfg = useRuntimeConfig(event)
   const fwd = getRequestHeader(event, 'x-forwarded-for')
-  if (cfg.trustProxy && fwd) return fwd.split(',')[0]!.trim()
+  // 走 boolSetting 而非直接读 cfg.trustProxy：容器里的 TRUST_PROXY 不会映射进 runtimeConfig
+  if (boolSetting(cfg.trustProxy, 'NUXT_TRUST_PROXY', 'TRUST_PROXY') && fwd) {
+    return fwd.split(',')[0]!.trim()
+  }
   return event.node.req.socket.remoteAddress || ''
 }
 
@@ -57,3 +61,5 @@ export function createRateLimiter(windowMs: number, max: number): RateLimiter {
 export const proxyLimiter = createRateLimiter(60 * 1000, 30)
 // 登录/注册/找回密码限流：每 IP 每分钟 10 次，防爆破
 export const authLimiter = createRateLimiter(60 * 1000, 10)
+// 云同步读写限流：每次同步为「拉取 + 上传」两个请求，按每 IP 每分钟 120 次
+export const dataLimiter = createRateLimiter(60 * 1000, 120)

@@ -1,0 +1,49 @@
+# 部署模板：复制为 docker-compose.yml 后填入真实口令（docker-compose.yml 已被 .gitignore 忽略）
+# https://command.zhangzhengyang.com → VPS Nginx:443 → frp(4900) → 本容器 :4900
+# Node 服务：Nuxt 4 SPA + Nitro API，数据库复用 dev-stack MySQL（webCommand 库）
+name: webcommand
+
+services:
+  webcommand-web:
+    build: .
+    container_name: webcommand-web
+    restart: unless-stopped
+    # 探活看的是 /api/health：数据库不可用或迁移未成功时会返回 503，
+    # 避免「进程活着但注册登录全废」的假健康状态
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    ports:
+      - '4900:3000'
+    networks:
+      - dev-stack_devnet
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      # 只有 NUXT_ 前缀的变量会被 Nitro 注入 runtimeConfig。
+      # 裸名（DB_HOST 等）也能被 server/utils/setting.ts 兼容读取，但推荐统一用 NUXT_ 写法，
+      # 因为构建产物里不再烘任何凭据，改口令只需重启容器即可生效。
+      NUXT_DB_HOST: dev-mysql
+      NUXT_DB_PORT: '3306'
+      NUXT_DB_NAME: webCommand
+      NUXT_DB_USER: appuser
+      NUXT_DB_PASSWORD: '<从密码管理器填入>'
+      # 会话密钥生成：node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+      NUXT_SESSION_PASSWORD: '<至少 32 位随机串>'
+      NUXT_PUBLIC_SITE_URL: https://command.zhangzhengyang.com
+      # 位于可信反向代理之后时必须为 true，否则限流会按 frp/nginx 的内层 IP 计数，
+      # 所有访客共用同一个桶（登录限流 10/min 会误伤正常用户）
+      NUXT_TRUST_PROXY: 'true'
+
+networks:
+  dev-stack_devnet:
+    external: true
