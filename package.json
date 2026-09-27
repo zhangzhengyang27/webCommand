@@ -12,9 +12,12 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "node --test \"test/*.spec.ts\"",
     "typecheck": "nuxt typecheck",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:routes": "vitest run",
+    "test:all": "pnpm test && pnpm test:routes"
   },
   "dependencies": {
     "@pinia/nuxt": "^1.0.2",
@@ -44,9 +47,11 @@
     "@types/nodemailer": "^6.4.17",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
+    "happy-dom": "^17.6.3",
     "prettier": "^3.9.6",
     "typescript": "^5.9.3",
     "unplugin-vue-components": "^32.1.0",
+    "vitest": "^2.1.9",
     "vue-tsc": "^3.3.11"
   }
 }
