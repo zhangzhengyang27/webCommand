@@ -1,65 +1,90 @@
 #!/usr/bin/env bash
-# webCommand 部署脚本：本地构建 -> 安全检查 -> 同步到 NAS -> 重启容器 -> 探活
+# webCommand 部署辅助脚本：本地构建 + 产物凭据扫描 + 部署后核验
+#
+# 职责边界（重要）：**本脚本不做任何远端操作**。既有管线（Mac 构建 → tar 管道同步 →
+# NAS docker compose --build → frp → VPS Nginx）依赖 .deploy-tmp 下的 expect 脚本与 NAS
+# 口令，已验证可用且涉及交互认证，不该在这里重新实现一遍。
+# 曾经这里写了 ssh + rsync --delete 的远端步骤，既缺 sudo / docker 全路径 /
+# DOCKER_BUILDKIT=0 而根本跑不通，又会对 NAS 部署目录做删除操作 —— 已移除。
+#
+# 这里只补流水线里最容易出事的三件事：
+#   1) 构建必须用 nvm 的 node（TRAE VM 的 x86_64 二进制会 exec format error）
+#   2) 产物是否把凭据烘进去了（历史上真发生过：nuxt.config 读 process.env 让 .output
+#      内含明文 DB 口令与内网地址，产物一外传就等于泄露）
+#   3) 部署后 /api/health 是否真的 ok —— 它现在在库不通或表未就绪时返回 503，
+#      能挡住"进程活着但注册登录全废"这种假健康
 #
 # 用法：
-#   NAS_HOST=<NAS内网IP> NAS_USER=<用户名> NAS_PATH=/volume1/docker/webcommand ./scripts/deploy.sh
-# 首次使用请先确认这三个变量（也可以写进同目录的 deploy.env，脚本会自动 source）。
-#
-# 设计要点：
-# - 构建在本地做（NAS 上不装 node_modules），只同步 .output 与 Docker 相关文件；
-# - 部署前强制检查产物里不含凭据，防止有人把私有配置改回构建期内联；
-# - 探活失败时打印上一个镜像标签，由人决定要不要回滚（脚本不自动回滚，避免误判把线上反复横跳）。
+#   ./scripts/deploy.sh build     构建并扫描产物（默认）
+#   ./scripts/deploy.sh verify    核验线上健康检查
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-[ -f scripts/deploy.env ] && source scripts/deploy.env
 
-: "${NAS_HOST:?必须提供 NAS_HOST（部署目标主机）}"
-: "${NAS_USER:?必须提供 NAS_USER}"
-: "${NAS_PATH:?必须提供 NAS_PATH（NAS 上存放本工程 docker-compose 的目录）}"
-COMPOSE_SERVICE="${COMPOSE_SERVICE:-webcommand-web}"
 HEALTH_URL="${HEALTH_URL:-https://command.zhangzhengyang.com/api/health}"
 
-DB_PASSWORD_VALUE="$(sed -n 's/^DB_PASSWORD=//p' .env | head -1 || true)"
+scan_artifact() {
+  local pw sp findings=0
+  pw="$(sed -n 's/^DB_PASSWORD=//p' .env 2>/dev/null | head -1 || true)"
+  sp="$(sed -n 's/^NUXT_SESSION_PASSWORD=//p' .env 2>/dev/null | head -1 || true)"
 
-echo "==> 1/5 构建"
-pnpm build
-
-echo "==> 2/5 检查产物不含凭据"
-if [ -n "$DB_PASSWORD_VALUE" ] && grep -rqF -- "$DB_PASSWORD_VALUE" .output/; then
-  echo "❌ .output 里出现了 .env 中的数据库口令，拒绝部署。" >&2
-  echo "   私有配置必须由运行期环境变量注入（见 server/utils/appConfig.ts）。" >&2
-  exit 1
-fi
-if grep -rqE "192\.168\.[0-9]+\.[0-9]+" .output/server/ 2>/dev/null; then
-  echo "⚠️  产物里出现内网地址，请确认是否又把配置烘进了构建期" >&2
-fi
-echo "   产物干净"
-
-echo "==> 3/5 同步到 NAS"
-PREV_TAG="$(ssh "$NAS_USER@$NAS_HOST" \
-  "docker images --format '{{.Tag}}' webcommand-web:latest 2>/dev/null | head -1" || true)"
-rsync -az --delete \
-  --include '.output/***' --include 'Dockerfile' --include '.dockerignore' \
-  --include 'docker-compose.yml' --exclude '*' \
-  ./ "$NAS_USER@$NAS_HOST:$NAS_PATH/"
-
-echo "==> 4/5 重启容器"
-ssh "$NAS_USER@$NAS_HOST" "cd $NAS_PATH && docker compose up -d --build $COMPOSE_SERVICE"
-
-echo "==> 5/5 探活（最多等 60s）"
-for i in $(seq 1 20); do
-  sleep 3
-  body="$(curl -fsS --max-time 5 "$HEALTH_URL" 2>/dev/null || true)"
-  if echo "$body" | grep -q '"status":"ok"'; then
-    echo "✅ 部署完成：$body"
-    exit 0
+  if [ -n "$pw" ] && grep -rqF -- "$pw" .output/ 2>/dev/null; then
+    echo "❌ .output 内含 .env 里的数据库口令，禁止部署" >&2
+    echo "   私有配置必须走运行期注入（server/utils/appConfig.ts）；" >&2
+    echo "   检查是否有人又把 process.env 读回了 nuxt.config 的 runtimeConfig。" >&2
+    findings=$((findings + 1))
   fi
-  echo "   等待中… ($i/20)"
-done
+  if [ -n "$sp" ] && grep -rqF -- "$sp" .output/ 2>/dev/null; then
+    echo "❌ .output 内含会话加密密钥，禁止部署" >&2
+    findings=$((findings + 1))
+  fi
+  if grep -rqE "192\.168\.[0-9]+\.[0-9]+" .output/server/ 2>/dev/null; then
+    echo "⚠️  产物里出现内网地址，确认不是又把配置烘进了构建期" >&2
+  fi
 
-echo "❌ 探活失败，请手动检查：ssh $NAS_USER@$NAS_HOST 'cd $NAS_PATH && docker logs --tail 100 $COMPOSE_SERVICE'" >&2
-if [ -n "$PREV_TAG" ]; then
-  echo "   上一个可用镜像标签：webcommand-web:$PREV_TAG（可用 docker compose 指定后回滚）" >&2
-fi
-exit 1
+  if [ "$findings" -gt 0 ]; then
+    return 1
+  fi
+  echo "✅ 产物干净（不含口令与密钥）"
+}
+
+case "${1:-build}" in
+  build)
+    echo "==> 1/2 构建"
+    export PATH="$HOME/.nvm/versions/node/v22.15.0/bin:$PATH"
+    pnpm build
+    echo "==> 2/2 扫描产物凭据"
+    scan_artifact
+
+    cat <<'NEXT'
+
+==> 传输与重建请按《webCommand部署与避雷手册》§3 执行（本脚本不代做）：
+    1) expect tar_src_pipe.exp <仓库路径> /volume1/docker/webcommand
+    2) expect tar_nm_pipe.exp  <仓库路径> /volume1/docker/webcommand
+       ⚠️ 第 2 步不能省：bsdtar 的 --exclude=node_modules 会连 .output/server/node_modules
+          一起排掉，缺它容器会因 sequelize 找不到 mysql2 而崩溃循环
+    3) NAS 上以 DOCKER_BUILDKIT=0 执行 docker compose up -d --build（btrfs + BuildKit 死锁）
+    4) 回来跑：./scripts/deploy.sh verify
+NEXT
+    ;;
+  verify)
+    echo "==> 核验 $HEALTH_URL"
+    if ! body="$(curl -fsS -m 15 "$HEALTH_URL" 2>&1)"; then
+      echo "❌ 健康检查不是 2xx —— 库不通或表未就绪都会返回 503" >&2
+      printf '%s\n' "$body" >&2
+      exit 1
+    fi
+    printf '%s\n' "$body"
+    case "$body" in
+      *'"status":"ok"'*) echo "✅ 服务健康（库可达且表已就绪）" ;;
+      *)
+        echo "❌ 返回 2xx 但状态不是 ok" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    echo "用法：$0 [build|verify]" >&2
+    exit 2
+    ;;
+esac

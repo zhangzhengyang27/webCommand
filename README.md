@@ -118,14 +118,24 @@ NUXT_DB_*  >  裸名 DB_*  >  构建期默认值
 
 ## 部署与备份
 
+传输与重建沿用 NAS 侧那套已验证管线（Mac 构建 → tar 管道同步 → NAS `docker compose --build`
+→ frp → VPS Nginx），细节见《webCommand部署与避雷手册》§3。**仓库内的脚本不代做远端操作**，
+只补最容易出事的环节：
+
 ```bash
-NAS_HOST=... NAS_USER=... NAS_PATH=... ./scripts/deploy.sh    # 构建 -> 产物凭据扫描 -> 同步 -> 重启 -> 探活
-DB_HOST=... DB_USER=... DB_NAME=webCommand ./scripts/backup-db.sh  # mysqldump + gzip + 空备份判定 + 按天保留
+./scripts/deploy.sh build   # 用 nvm 的 node 构建，并扫描 .output 是否含凭据（含则拒绝部署）
+./scripts/deploy.sh verify  # 核验线上 /api/health
+DB_HOST=... DB_USER=... DB_NAME=webCommand ./scripts/backup-db.sh   # 备份 + 空备份判定 + 保留窗口
 ```
 
-`deploy.sh` 会在产物里检出 `.env` 的数据库口令，命中即拒绝部署。备份建议挂 cron 并保留 14 天，
-备份目录放另一块盘。健康检查 `/api/health` 在数据库不可达或迁移未成功时返回 503，
-容器 healthcheck 依赖它，避免出现「进程活着但注册登录全废」的假健康。
+两个不能省的坑：同步时必须补传 `.output/server/node_modules`（`bsdtar` 的
+`--exclude=node_modules` 会把它一起排掉，缺了容器会因找不到 `mysql2` 崩溃循环）；
+NAS 上构建要 `DOCKER_BUILDKIT=0`（btrfs + BuildKit 死锁）。
+
+`/api/health` 在数据库不可达或表未就绪时返回 **503**，容器 healthcheck 依赖它，
+避免出现"进程活着但注册登录全废"的假健康。部署后建议再确认一次生产库的
+`(userId, type)` 唯一索引存在（`SHOW INDEX FROM user_data`）—— 迁移器对已存在的表是
+完全不动的，而云端 upsert 的冲突判定依赖这个索引。
 
 ## 真实数据库冒烟
 
