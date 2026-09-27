@@ -16,7 +16,7 @@ export default bizHandler(async (event) => {
   try {
     await sendMail({
       to: email,
-      subject: 'YuIndex 找回密码验证码',
+      subject: 'webCommand 找回密码验证码',
       text: `你的验证码是 ${code}，10 分钟内有效。若非本人操作请忽略本邮件。`,
     })
   } catch (e: unknown) {

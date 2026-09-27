@@ -1,7 +1,7 @@
 import type { CommandType } from '../../../command'
 import { updateUserPassword } from '../userApi'
 import { useUserStore } from '../userStore'
-import { LOCAL_USER } from '../userConstant'
+import { LOCAL_USER, MIN_PASSWORD_LENGTH } from '../userConstant'
 import { errMsg } from '../../../../utils/error'
 
 /**
@@ -21,7 +21,7 @@ const passwdCommand: CommandType = {
     },
     {
       key: 'newPassword',
-      desc: '新密码（至少 6 位）',
+      desc: `新密码（至少 ${MIN_PASSWORD_LENGTH} 位）`,
       alias: ['n'],
       type: 'string',
       required: true,
@@ -33,8 +33,8 @@ const passwdCommand: CommandType = {
       terminal.writeTextErrorResult('用法：passwd -o <旧密码> -n <新密码>')
       return
     }
-    if (String(newPassword).length < 6) {
-      terminal.writeTextErrorResult('新密码至少 6 位')
+    if (String(newPassword).length < MIN_PASSWORD_LENGTH) {
+      terminal.writeTextErrorResult(`新密码至少 ${MIN_PASSWORD_LENGTH} 位`)
       return
     }
     const { loginUser } = useUserStore()

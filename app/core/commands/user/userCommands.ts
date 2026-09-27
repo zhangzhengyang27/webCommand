@@ -6,6 +6,7 @@ import { LOCAL_USER } from './userConstant'
 import logoutCommand from './subCommands/logoutCommand'
 import passwdCommand from './subCommands/passwdCommand'
 import resetCommand from './subCommands/resetCommand'
+import deleteCommand from './subCommands/deleteCommand'
 
 /**
  * 用户命令
@@ -28,6 +29,7 @@ const userCommand: CommandType = {
     logout: logoutCommand,
     passwd: passwdCommand,
     reset: resetCommand,
+    delete: deleteCommand,
   },
   options: [],
   async action(options, terminal) {

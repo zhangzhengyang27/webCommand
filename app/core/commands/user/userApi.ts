@@ -85,3 +85,15 @@ export const resetPassword = async (
     newPassword,
   })
 }
+
+/**
+ * 注销账号（删除云端数据，需重新输入密码并确认用户名）
+ * @param password 当前密码
+ * @param confirm 与用户名完全一致的确认串
+ */
+export const userDelete = async (
+  password: string,
+  confirm: string,
+): Promise<ApiResult<boolean>> => {
+  return await myAxios.post<boolean>('/user/delete', { password, confirm })
+}

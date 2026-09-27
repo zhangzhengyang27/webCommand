@@ -1,16 +1,20 @@
 import { UserDataModel, type UserDataAttributes } from '../../models/UserData'
 import { bizHandler, BizError, ERROR_CODE } from '../../utils/response'
+import { dataLimiter } from '../../utils/rateLimit'
+import { checkDataWrite } from '../../utils/dataAccess'
 
 // 同步（upsert）用户云端数据，对齐原 POST /api/data/sync
 export default bizHandler(async (event) => {
-  const session = await getUserSession(event)
-  const user = session.user
-  if (!user?.id) throw new BizError(ERROR_CODE.NO_AUTH, '未登录')
+  if (dataLimiter.hit(event))
+    throw new BizError(ERROR_CODE.RATE_LIMIT, '同步过于频繁，请稍后再试', 429)
+  const { user } = await getUserSession(event)
   const { type, content } = (await readBody(event)) || {}
-  if (!type || typeof type !== 'string' || type.length > 32)
-    throw new BizError(ERROR_CODE.PARAMS, 'type 不合法')
-  if (typeof content !== 'string' || content.length > 1024 * 1024)
-    throw new BizError(ERROR_CODE.PARAMS, 'content 不合法')
-  await UserDataModel().upsert({ userId: user.id, type, content } as UserDataAttributes)
+  const decision = checkDataWrite(user, type, content)
+  if (!decision.ok) throw new BizError(ERROR_CODE[decision.code], decision.message)
+  await UserDataModel().upsert({
+    userId: decision.userId,
+    type: decision.type,
+    content: decision.content,
+  } as UserDataAttributes)
   return true
 })

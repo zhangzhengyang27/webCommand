@@ -2,7 +2,16 @@ import { Op, UniqueConstraintError } from 'sequelize'
 import bcrypt from 'bcryptjs'
 import md5 from 'md5'
 import { UserModel, toSafeUser, type SafeUser, type UserAttributes } from '../models/User'
+import { UserDataModel } from '../models/UserData'
+import { useDb } from '../utils/db'
 import { BizError, ERROR_CODE } from '../utils/response'
+import { isValidEmail, validateNewPassword } from '../utils/accountPolicy'
+
+/** 口令长度等基础校验，不合法时直接抛出面向用户的提示 */
+function assertNewPassword(password: unknown): asserts password is string {
+  const message = validateNewPassword(password)
+  if (message) throw new BizError(ERROR_CODE.PARAMS, message)
+}
 
 // 历史密码加盐（仅兼容旧用户）
 const SALT = 'coder_yupi'
@@ -26,9 +35,8 @@ export async function userRegister(
 ): Promise<number> {
   if (!username || !password || !email) throw new BizError(ERROR_CODE.PARAMS, '参数错误')
   if (username.length > 32) throw new BizError(ERROR_CODE.PARAMS, '用户名过长')
-  if (password.length < 6) throw new BizError(ERROR_CODE.PARAMS, '密码至少 6 位')
-  const regEmail = /^[A-Za-z0-9\u4e00-\u9fa5]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/
-  if (!regEmail.test(email)) throw new BizError(ERROR_CODE.PARAMS, '邮箱非法')
+  assertNewPassword(password)
+  if (!isValidEmail(email)) throw new BizError(ERROR_CODE.PARAMS, '邮箱非法')
 
   const existed = await UserModel().findOne({
     where: { [Op.or]: [{ username }, { email }] },
@@ -91,7 +99,7 @@ export async function updateUserPassword(
   newPassword: string,
 ): Promise<boolean> {
   if (!oldPassword || !newPassword) throw new BizError(ERROR_CODE.PARAMS, '参数错误')
-  if (newPassword.length < 6) throw new BizError(ERROR_CODE.PARAMS, '密码至少 6 位')
+  assertNewPassword(newPassword)
   const user = await UserModel().findByPk(userId)
   if (!user || (user.toJSON() as UserAttributes).isDelete)
     throw new BizError(ERROR_CODE.NOT_FOUND, '找不到该用户')
@@ -113,12 +121,39 @@ export async function findActiveUserByEmail(email: string) {
   return UserModel().findOne({ where: { email, isDelete: 0 } })
 }
 
+/**
+ * 注销账号：校验当前口令后软删用户，并删除其全部云端数据。
+ *
+ * user 保留一行（isDelete=1）便于事后核对；user_data 直接物理删除——
+ * "删除我的数据"这条承诺不能靠后续清理来兑现。两步放在同一事务里，
+ * 避免出现"数据没了但账号还能登录"的半删状态。
+ */
+export async function deleteAccount(userId: number | string, password: string): Promise<boolean> {
+  if (!userId || !password) throw new BizError(ERROR_CODE.PARAMS, '参数错误')
+  const user = await UserModel().findByPk(userId)
+  if (!user || (user.toJSON() as UserAttributes).isDelete)
+    throw new BizError(ERROR_CODE.NOT_FOUND, '找不到该用户')
+  const attrs = user.toJSON() as UserAttributes
+  if (!(await verifyPassword(password, attrs.password)))
+    throw new BizError(ERROR_CODE.PARAMS, '密码错误')
+  const transaction = await useDb().transaction()
+  try {
+    await UserDataModel().destroy({ where: { userId: attrs.id }, transaction })
+    await UserModel().update({ isDelete: 1 }, { where: { id: attrs.id }, transaction })
+    await transaction.commit()
+  } catch (e) {
+    await transaction.rollback()
+    throw e
+  }
+  return true
+}
+
 /** 重置密码（邮箱验证码流程，不校验旧密码） */
 export async function resetUserPassword(
   userId: number | string,
   newPassword: string,
 ): Promise<boolean> {
-  if (!newPassword || newPassword.length < 6) throw new BizError(ERROR_CODE.PARAMS, '密码至少 6 位')
+  assertNewPassword(newPassword)
   await UserModel().update(
     { password: await bcrypt.hash(newPassword, BCRYPT_ROUNDS) },
     { where: { id: userId } },

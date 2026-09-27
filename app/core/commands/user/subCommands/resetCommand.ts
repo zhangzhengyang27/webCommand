@@ -1,6 +1,7 @@
 import type { CommandType } from '../../../command'
 import { resetPassword, sendResetCode } from '../userApi'
 import { errMsg } from '../../../../utils/error'
+import { MIN_PASSWORD_LENGTH } from '../userConstant'
 
 /**
  * 找回密码命令（邮箱验证码两步流程）
@@ -27,7 +28,7 @@ const resetCommand: CommandType = {
     },
     {
       key: 'newPassword',
-      desc: '新密码（至少 6 位）',
+      desc: `新密码（至少 ${MIN_PASSWORD_LENGTH} 位）`,
       alias: ['n'],
       type: 'string',
     },
@@ -56,8 +57,8 @@ const resetCommand: CommandType = {
       return
     }
     // 第二步：验证码 + 新密码 => 重置
-    if (String(newPassword).length < 6) {
-      terminal.writeTextErrorResult('新密码至少 6 位')
+    if (String(newPassword).length < MIN_PASSWORD_LENGTH) {
+      terminal.writeTextErrorResult(`新密码至少 ${MIN_PASSWORD_LENGTH} 位`)
       return
     }
     try {
