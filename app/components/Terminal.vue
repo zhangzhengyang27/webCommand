@@ -96,6 +96,7 @@ import { useTerminalConfigStore } from '../core/commands/terminal/config/termina
 import { useThemeStore } from '../core/commands/theme/themeStore'
 import { useSpaceStore } from '../core/commands/space/spaceStore'
 import useHint from './hint'
+import { redactSensitiveText, sanitizeForSnapshot } from './outputSnapshot'
 import UserType = User.UserType
 import { LOCAL_USER } from '../core/commands/user/userConstant'
 
@@ -154,16 +155,6 @@ const spacePrompt = computed(() => {
 // 保持 prompt 与 spacePrompt 一致（原 prompt 仅含用户名）
 const prompt = computed(() => spacePrompt.value)
 
-/**
- * 脱敏命令历史中的密码参数，避免明文凭据落入 localStorage
- * 覆盖 -p xxx / -p=xxx / --password xxx / --password=xxx / -password xxx
- */
-function redactSensitiveText(text: string): string {
-  if (!text) {
-    return text
-  }
-  return text.replace(/(--?password|-p)\b(=|\s+)(\S+)/gi, (_m, flag, sep) => `${flag}${sep}***`)
-}
 const commandInputRef = ref()
 
 // 命令是否运行
@@ -243,29 +234,6 @@ watch(
   },
   { deep: true },
 )
-
-/**
- * 快照序列化前清洗：组件（含内嵌 resultList 中的组件）无法 JSON 序列化，
- * 转为提示文本，避免恢复后出现残缺空白/报错 (#94)
- */
-const sanitizeForSnapshot = (o: unknown): unknown => {
-  if (!o || typeof o !== 'object') {
-    return null
-  }
-  const obj = o as Record<string, unknown>
-  if (obj.type === 'component') {
-    return { type: 'text', text: '（该内容包含交互组件，刷新后已省略）' }
-  }
-  // 命令回显同样需要脱敏，避免 `user login -p xxx` 明文落入 localStorage
-  if (obj.type === 'command' && typeof obj.text === 'string') {
-    return { ...obj, text: redactSensitiveText(obj.text) }
-  }
-  if (Array.isArray(obj.resultList)) {
-    const resultList = obj.resultList.map((r) => sanitizeForSnapshot(r)).filter(Boolean)
-    return { ...obj, resultList }
-  }
-  return obj
-}
 
 /**
  * 输出快照持久化（防误刷新，刷新后可恢复）(#94)

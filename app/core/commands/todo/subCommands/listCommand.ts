@@ -47,7 +47,7 @@ const listCommand: CommandType = {
     const taskList = store.filteredTaskList(filter)
     store.currentFilter = filter
     if (taskList.length === 0) {
-      terminal.writeTextResult('暂无任务')
+      terminal.writeTextResult('暂无任务，用 todo add <内容> 添加第一条')
       return
     }
     const statusLabel = filter === 'all' ? '全部' : filter === 'todo' ? '未完成' : '已完成'
