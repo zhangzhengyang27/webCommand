@@ -2,9 +2,7 @@ import type { CommandType } from '../../../command'
 import { userLogout } from '../userApi'
 import { useUserStore } from '../userStore'
 import { LOCAL_USER } from '../userConstant'
-import { useTodoStore } from '../../todo/todoStore'
-import { useSpaceStore } from '../../space/spaceStore'
-import { useNoteStore } from '../../note/noteStore'
+import { resetAllCloudSync } from '../../../../composables/cloudSyncRegistry'
 
 /**
  * 用户注销命令
@@ -18,10 +16,8 @@ const logoutCommand: CommandType = {
     const res = await userLogout()
     const { setLoginUser } = useUserStore()
     if (res?.code === 0) {
-      // 注销时解除 todo/space/note 的云端同步订阅，避免注销后的本地变更继续同步
-      useTodoStore().resetCloudSync()
-      useSpaceStore().resetCloudSync()
-      useNoteStore().resetCloudSync()
+      // 注销时解除全部数据类型的云同步订阅，避免注销后的本地变更继续上云
+      await resetAllCloudSync()
       setLoginUser(LOCAL_USER)
       terminal.writeTextSuccessResult('已退出登录')
     } else {

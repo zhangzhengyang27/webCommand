@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import TaskType = Todo.TaskType
 import { useCloudSync } from '../../../composables/useCloudSync'
+import { clearDeleted, mergeKeyed, pruneTombstones } from '../../../composables/cloudMerge'
 
 // 将云端返回的字符串日期还原为 Date 对象
 function reviveTask(t: Record<string, unknown>): TaskType {
@@ -10,6 +11,7 @@ function reviveTask(t: Record<string, unknown>): TaskType {
     isFinished: Boolean(t.isFinished),
     createTime: t.createTime ? new Date(String(t.createTime)) : new Date(),
     finishTime: t.finishTime ? new Date(String(t.finishTime)) : undefined,
+    updateTime: typeof t.updateTime === 'number' ? t.updateTime : undefined,
   }
 }
 
@@ -25,26 +27,37 @@ function generateId(): string {
  */
 export type TaskFilter = 'all' | 'todo' | 'done'
 
+/** 云端 todo 的数据结构；历史数据为裸数组，合并时按旧结构兜底 */
+interface TodoCloudShape {
+  items: TaskType[]
+  /** 已删除任务墓碑（id -> 删除时刻），用于阻止另一端把任务合并回来 */
+  deleted: Record<string, number>
+}
+
+/** 解析云端内容，兼容旧版裸数组格式 */
+function parseCloud(data: unknown): TodoCloudShape {
+  if (Array.isArray(data)) return { items: data as TaskType[], deleted: {} }
+  if (data && typeof data === 'object') {
+    const obj = data as { items?: unknown; deleted?: unknown }
+    return {
+      items: Array.isArray(obj.items) ? (obj.items as TaskType[]) : [],
+      deleted:
+        obj.deleted && typeof obj.deleted === 'object'
+          ? (obj.deleted as Record<string, number>)
+          : {},
+    }
+  }
+  return { items: [], deleted: {} }
+}
+
 export const useTodoStore = defineStore('todo', {
   state: () => ({
     // 当前列表筛选条件（供 delete 按显示序号定位到真实任务）
     currentFilter: 'all' as TaskFilter,
-    // 任务列表
-    taskList: [
-      {
-        id: generateId(),
-        name: '写下你要做的事',
-        isFinished: false,
-        createTime: new Date(),
-      },
-      {
-        id: generateId(),
-        name: '已完成的事项',
-        isFinished: true,
-        createTime: new Date(),
-        finishTime: new Date(),
-      },
-    ] as TaskType[],
+    // 已删除任务墓碑（id -> 删除时刻）
+    deleted: {} as Record<string, number>,
+    // 任务列表（首次使用为空；原先内置的两条演示任务会随同步写进云端，每台新设备都留两条垃圾）
+    taskList: [] as TaskType[],
   }),
   getters: {
     /**
@@ -85,11 +98,13 @@ export const useTodoStore = defineStore('todo', {
       if (!task || !task.name) {
         return false
       }
+      const now = Date.now()
       this.taskList.push({
         id: task.id || generateId(),
         name: task.name,
         isFinished: false,
         createTime: new Date(),
+        updateTime: now,
       })
       return true
     },
@@ -103,6 +118,7 @@ export const useTodoStore = defineStore('todo', {
         return false
       }
       this.taskList.splice(index, 1)
+      this.deleted[id] = Date.now()
       return true
     },
     /**
@@ -122,7 +138,7 @@ export const useTodoStore = defineStore('todo', {
       if (newTask.isFinished === false) {
         newTask.finishTime = undefined
       }
-      this.taskList[index] = { ...task, ...newTask } as TaskType
+      this.taskList[index] = { ...task, ...newTask, updateTime: Date.now() } as TaskType
       return true
     },
     /**
@@ -140,13 +156,22 @@ export const useTodoStore = defineStore('todo', {
      * 清空所有任务
      */
     clearAll() {
+      this.tombstoneAll(this.taskList)
       this.taskList = []
     },
     /**
      * 清空已完成任务
      */
     clearFinished() {
+      this.tombstoneAll(this.taskList.filter((task) => task.isFinished))
       this.taskList = this.taskList.filter((task) => !task.isFinished)
+    },
+    /**
+     * 为一批任务留下删除墓碑，防止其它设备把它们重新合并回来
+     */
+    tombstoneAll(tasks: TaskType[]) {
+      const now = Date.now()
+      for (const task of tasks) this.deleted[task.id] = now
     },
     /**
      * 同步到云端（登录后）(#24)
@@ -179,7 +204,14 @@ export const useTodoStore = defineStore('todo', {
       const items = (Array.isArray(list) ? list : []).filter(
         (t): t is Record<string, unknown> => typeof t === 'object' && t !== null && 'name' in t,
       )
-      this.taskList = items.map(reviveTask)
+      const now = Date.now()
+      this.taskList = items.map((t) => {
+        const task = reviveTask(t)
+        // 导入即恢复：改到最新时间并清掉墓碑，避免被历史删除记录再次消掉
+        task.updateTime = now
+        clearDeleted(this.deleted, task.id)
+        return task
+      })
       this.syncToCloud()
     },
   },
@@ -189,16 +221,21 @@ export const useTodoStore = defineStore('todo', {
 const getStore = () => useTodoStore()
 
 const cloudSync = useCloudSync('todo', {
-  serialize: () => getStore().taskList,
+  serialize: () => ({
+    items: getStore().taskList,
+    deleted: pruneTombstones(getStore().deleted),
+  }),
   merge: (data) => {
-    if (!Array.isArray(data)) return
     const store = getStore()
-    const cloudTasks: TaskType[] = data
-      .filter((t): t is Record<string, unknown> => typeof t === 'object' && t !== null)
-      .map(reviveTask)
-    const cloudIds = new Set(cloudTasks.map((t) => t.id))
-    // 合并：云端任务（源为真）+ 本地独有任务（尚未同步到云端）
-    const localOnly = store.taskList.filter((t) => !cloudIds.has(t.id))
-    store.taskList = [...cloudTasks, ...localOnly]
+    const cloud = parseCloud(data)
+    const { items, deleted } = mergeKeyed<TaskType>(
+      cloud.items,
+      store.taskList,
+      (task) => task.id,
+      cloud.deleted,
+      store.deleted,
+    )
+    store.taskList = items
+    store.deleted = deleted
   },
 })

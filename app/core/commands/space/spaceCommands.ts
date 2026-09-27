@@ -24,6 +24,11 @@ export interface SpaceItemType {
   // 所属目录
   dir: string
   type: 'dir' | 'link'
+  /**
+   * 最后修改时刻（毫秒），跨设备合并时同一路径冲突以此判定谁胜出；
+   * 历史数据无该字段，按 0 处理
+   */
+  updateTime?: number
 }
 
 /**

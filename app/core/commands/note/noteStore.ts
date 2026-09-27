@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { useCloudSync } from '../../../composables/useCloudSync'
+import { clearDeleted, mergeKeyed, pruneTombstones } from '../../../composables/cloudMerge'
 
 /**
  * 速记条目
@@ -8,6 +9,11 @@ export interface NoteType {
   id: string
   text: string
   createTime: string | Date
+  /**
+   * 最后修改时刻（毫秒），跨设备合并时同 id 冲突以此判定谁胜出；
+   * 历史数据无该字段，按 0 处理
+   */
+  updateTime?: number
 }
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
@@ -18,7 +24,29 @@ function reviveNote(n: Record<string, unknown>): NoteType {
     id: String(n.id ?? ''),
     text: String(n.text ?? ''),
     createTime: n.createTime ? new Date(String(n.createTime)) : new Date(),
+    updateTime: typeof n.updateTime === 'number' ? n.updateTime : undefined,
   }
+}
+
+/** 云端 note 的数据结构；历史数据为裸数组，合并时按旧结构兜底 */
+interface NoteCloudShape {
+  items: NoteType[]
+  deleted: Record<string, number>
+}
+
+function parseCloud(data: unknown): NoteCloudShape {
+  if (Array.isArray(data)) return { items: data as NoteType[], deleted: {} }
+  if (data && typeof data === 'object') {
+    const obj = data as { items?: unknown; deleted?: unknown }
+    return {
+      items: Array.isArray(obj.items) ? (obj.items as NoteType[]) : [],
+      deleted:
+        obj.deleted && typeof obj.deleted === 'object'
+          ? (obj.deleted as Record<string, number>)
+          : {},
+    }
+  }
+  return { items: [], deleted: {} }
 }
 
 /**
@@ -26,6 +54,8 @@ function reviveNote(n: Record<string, unknown>): NoteType {
  */
 export const useNoteStore = defineStore('note', {
   state: () => ({
+    // 已删除条目墓碑（id -> 删除时刻），阻止其它设备把条目重新合并回来
+    deleted: {} as Record<string, number>,
     noteList: [] as NoteType[],
   }),
   getters: {
@@ -44,6 +74,7 @@ export const useNoteStore = defineStore('note', {
         id: generateId(),
         text: text.trim(),
         createTime: new Date(),
+        updateTime: Date.now(),
       })
       this.syncToCloud()
       return true
@@ -54,11 +85,14 @@ export const useNoteStore = defineStore('note', {
         return false
       }
       this.noteList.splice(index, 1)
+      this.deleted[id] = Date.now()
       this.syncToCloud()
       return true
     },
     clearNotes(): number {
       const count = this.noteList.length
+      const now = Date.now()
+      for (const note of this.noteList) this.deleted[note.id] = now
       this.noteList = []
       this.syncToCloud()
       return count
@@ -94,7 +128,14 @@ export const useNoteStore = defineStore('note', {
       const items = (Array.isArray(list) ? list : []).filter(
         (n): n is Record<string, unknown> => typeof n === 'object' && n !== null && 'text' in n,
       )
-      this.noteList = items.map(reviveNote)
+      const now = Date.now()
+      this.noteList = items.map((n) => {
+        const note = reviveNote(n)
+        // 导入即恢复：改到最新时间并清掉墓碑，避免被历史删除记录再次消掉
+        note.updateTime = now
+        clearDeleted(this.deleted, note.id)
+        return note
+      })
       this.syncToCloud()
     },
   },
@@ -104,16 +145,21 @@ export const useNoteStore = defineStore('note', {
 const getStore = () => useNoteStore()
 
 const cloudSync = useCloudSync('note', {
-  serialize: () => getStore().noteList,
+  serialize: () => ({
+    items: getStore().noteList,
+    deleted: pruneTombstones(getStore().deleted),
+  }),
   merge: (data) => {
-    if (!Array.isArray(data)) return
     const store = getStore()
-    const cloudNotes: NoteType[] = data
-      .filter((n): n is Record<string, unknown> => typeof n === 'object' && n !== null)
-      .map(reviveNote)
-    const cloudIds = new Set(cloudNotes.map((n) => n.id))
-    // 合并：云端条目（源为真）+ 本地独有条目（尚未同步到云端）
-    const localOnly = store.noteList.filter((n) => !cloudIds.has(n.id))
-    store.noteList = [...cloudNotes, ...localOnly]
+    const cloud = parseCloud(data)
+    const { items, deleted } = mergeKeyed<NoteType>(
+      cloud.items,
+      store.noteList,
+      (note) => note.id,
+      cloud.deleted,
+      store.deleted,
+    )
+    store.noteList = items
+    store.deleted = deleted
   },
 })

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { SpaceItemType, SpaceType } from './spaceCommands'
 import { useCloudSync } from '../../../composables/useCloudSync'
+import { clearDeleted, mergeKeyed, pruneTombstones } from '../../../composables/cloudMerge'
 
 /**
  * 空间状态（类似文件系统实现）
@@ -18,6 +19,8 @@ export const useSpaceStore = defineStore('space', {
     } as SpaceType,
     // 当前所在目录
     currentDir: '/',
+    // 已删除条目墓碑（完整路径 -> 删除时刻），阻止其它设备把条目重新合并回来
+    deleted: {} as Record<string, number>,
   }),
   getters: {},
   // 持久化
@@ -84,7 +87,9 @@ export const useSpaceStore = defineStore('space', {
       if (this.space[fullPath]) {
         return false
       }
-      this.space[fullPath] = item
+      this.space[fullPath] = { ...item, updateTime: Date.now() }
+      // 重新创建同名条目：清掉旧墓碑，避免合并时被上一次删除记录消掉
+      clearDeleted(this.deleted, fullPath)
       return true
     },
     /**
@@ -111,9 +116,11 @@ export const useSpaceStore = defineStore('space', {
         }
       }
       // 移除属性（deleteKey 为动态路径）
+      const now = Date.now()
       deleteKeyList.forEach((deleteKey) => {
         // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete this.space[deleteKey]
+        this.deleted[deleteKey] = now
       })
       return true
     },
@@ -154,6 +161,7 @@ export const useSpaceStore = defineStore('space', {
       }
       // 递归复制子条目
       if (recursive && sourceItem.type === 'dir') {
+        const now = Date.now()
         for (const spaceKey in this.space) {
           if (spaceKey !== sourceFullPath && spaceKey.startsWith(sourceFullPath + '/')) {
             const childItem = { ...this.space[spaceKey]! }
@@ -162,7 +170,9 @@ export const useSpaceStore = defineStore('space', {
             const newChildDir = getParentDir(newChildPath)
             childItem.dir = newChildDir
             childItem.name = getItemName(newChildPath)
+            childItem.updateTime = now
             this.space[newChildPath] = childItem
+            clearDeleted(this.deleted, newChildPath)
           }
         }
       }
@@ -235,7 +245,15 @@ export const useSpaceStore = defineStore('space', {
       if (typeof data !== 'object' || data === null) return
       const obj = data as Record<string, unknown>
       if (obj.space && typeof obj.space === 'object') {
-        this.space = obj.space as SpaceType
+        const now = Date.now()
+        const space = obj.space as SpaceType
+        // 导入即恢复：逐条打上新时间并清掉同路径墓碑，避免合并时被历史删除记录消掉
+        for (const path in space) {
+          const item = space[path]
+          if (item) item.updateTime = now
+          clearDeleted(this.deleted, path)
+        }
+        this.space = space
       }
       if (typeof obj.currentDir === 'string') {
         this.currentDir = obj.currentDir
@@ -253,28 +271,43 @@ const cloudSync = useCloudSync('space', {
     const store = getStore()
     return {
       space: store.space,
-      currentDir: store.currentDir,
+      deleted: pruneTombstones(store.deleted),
     }
   },
   merge: (data) => {
     if (!data || typeof data !== 'object') return
-    const cloud = data as { space?: SpaceType; currentDir?: string }
+    const cloud = data as { space?: SpaceType; deleted?: Record<string, number> }
     if (!cloud.space) return
     const store = getStore()
-    // 合并：以云端为基准，保留云端没有的本地条目
-    const merged = { ...cloud.space }
-    for (const k in store.space) {
-      const item = store.space[k]
-      if (item && !merged[k]) {
-        merged[k] = item
-      }
+    type Entry = SpaceItemType & { path: string }
+    const toEntries = (space: SpaceType): Entry[] =>
+      Object.entries(space)
+        .filter((entry): entry is [string, SpaceItemType] => Boolean(entry[1]))
+        .map(([path, item]) => ({ ...item, path }))
+    // 逐条合并：以路径为 key，updateTime 新的一方胜出，墓碑路径按删除时间消除
+    const { items, deleted } = mergeKeyed<Entry>(
+      toEntries(cloud.space),
+      toEntries(store.space),
+      (entry) => entry.path,
+      cloud.deleted,
+      store.deleted,
+    )
+    const merged = {} as SpaceType
+    for (const entry of items) {
+      const { path, ...item } = entry
+      merged[path] = item
     }
+    // 根目录是 cd / 的目标，任何情况下都要存在
     if (!merged['/']) {
       const root = store.space['/']
       if (root) merged['/'] = root
     }
     store.space = merged
-    store.currentDir = cloud.currentDir || '/'
+    store.deleted = deleted
+    // currentDir 属设备态：本地当前目录还在就保持不动，否则回到根目录
+    if (!store.currentDir || !merged[store.currentDir]) {
+      store.currentDir = '/'
+    }
   },
 })
 

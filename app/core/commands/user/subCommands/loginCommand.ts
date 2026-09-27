@@ -49,13 +49,9 @@ const loginCommand: CommandType = {
       terminal.writeTextSuccessResult(
         remember !== false ? '登录成功（已开启自动登录）' : '登录成功',
       )
-      // 登录成功后初始化 todo / space / note 云端同步 (#24 #25)
-      const { useTodoStore } = await import('../../todo/todoStore')
-      const { useSpaceStore } = await import('../../space/spaceStore')
-      const { useNoteStore } = await import('../../note/noteStore')
-      useTodoStore().initCloudSync()
-      useSpaceStore().initCloudSync()
-      useNoteStore().initCloudSync()
+      // 登录成功后初始化全部数据类型（todo / space / note / 个性化配置）的云端同步 (#24 #25)
+      const { initAllCloudSync } = await import('../../../../composables/cloudSyncRegistry')
+      await initAllCloudSync()
     } else {
       terminal.writeTextErrorResult(res?.message ?? '登录失败')
     }
