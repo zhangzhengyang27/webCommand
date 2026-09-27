@@ -2,7 +2,7 @@
 # webCommand 部署脚本：本地构建 -> 安全检查 -> 同步到 NAS -> 重启容器 -> 探活
 #
 # 用法：
-#   NAS_HOST=<NAS内网IP> NAS_USER=root NAS_PATH=/volume1/docker/webcommand ./scripts/deploy.sh
+#   NAS_HOST=<NAS内网IP> NAS_USER=<用户名> NAS_PATH=/volume1/docker/webcommand ./scripts/deploy.sh
 # 首次使用请先确认这三个变量（也可以写进同目录的 deploy.env，脚本会自动 source）。
 #
 # 设计要点：
