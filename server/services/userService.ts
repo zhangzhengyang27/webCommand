@@ -1,6 +1,5 @@
 import { Op, UniqueConstraintError } from 'sequelize'
 import bcrypt from 'bcryptjs'
-import md5 from 'md5'
 import { UserModel, toSafeUser, type SafeUser, type UserAttributes } from '../models/User'
 import { UserDataModel } from '../models/UserData'
 import { useDb } from '../utils/db'
@@ -13,23 +12,11 @@ function assertNewPassword(password: unknown): asserts password is string {
   if (message) throw new BizError(ERROR_CODE.PARAMS, message)
 }
 
-/**
- * 前身工程（YuIndex）遗留的 MD5 口令盐值，**不可修改**：
- * 老用户库里存的是 md5(密码 + 该盐)，改值会让这批账号全部无法登录。
- * 新注册与改密一律走 bcrypt，校验通过后 verifyCredentials 会自动把哈希升级为 bcrypt，
- * 等存量 bcrypt 覆盖全部用户后（user.password 不再以非 $2 开头）这段兼容逻辑可整体删除。
- */
-const LEGACY_MD5_SALT = 'coder_yupi'
 const BCRYPT_ROUNDS = 10
 
-function isBcrypt(hash?: string) {
-  return !!hash && hash.startsWith('$2')
-}
-
-/** 校验密码：优先 bcrypt，兼容历史 MD5 */
+/** 校验密码：口令一律为 bcrypt 哈希 */
 async function verifyPassword(raw: string, hashed: string): Promise<boolean> {
-  if (isBcrypt(hashed)) return bcrypt.compare(raw, hashed)
-  return hashed === md5(raw + LEGACY_MD5_SALT)
+  return bcrypt.compare(raw, hashed)
 }
 
 /** 注册，返回新用户 id */
@@ -64,10 +51,7 @@ export async function userRegister(
   }
 }
 
-/**
- * 校验账号密码并返回脱敏用户（登录核心逻辑，session 写入交由路由层）。
- * 历史 MD5 密码校验通过后自动升级为 bcrypt。
- */
+/** 校验账号密码并返回脱敏用户（登录核心逻辑，session 写入交由路由层） */
 export async function verifyCredentials(username: string, password: string): Promise<SafeUser> {
   if (!username || !password) throw new BizError(ERROR_CODE.PARAMS, '参数错误')
   const user = await UserModel().findOne({ where: { username } })
@@ -79,12 +63,6 @@ export async function verifyCredentials(username: string, password: string): Pro
   const valid = await verifyPassword(password, attrs.password)
   if (!valid) throw new BizError(ERROR_CODE.NOT_FOUND, '用户不存在或密码错误')
 
-  if (!isBcrypt(attrs.password)) {
-    await UserModel().update(
-      { password: await bcrypt.hash(password, BCRYPT_ROUNDS) },
-      { where: { id: attrs.id } },
-    )
-  }
   return toSafeUser(user)
 }
 

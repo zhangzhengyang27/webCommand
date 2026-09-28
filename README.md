@@ -159,6 +159,8 @@ mysql -h 127.0.0.1 -u root -p < scripts/init-test-db.sql   # 唯一需要你手�
 ## 已知限制
 
 - **单实例假设**：限流计数与找回密码验证码都存在进程内存，重启即失效，水平扩容前需改 Redis。
+- 线上按 `webCommand` 库**全新开始**：前身工程的 `yuindex` 库未迁移，老账号与历史数据仍在旧库，
+  需要时再自行导入。口令一律 bcrypt（早期为兼容旧库 MD5 哈希留的盐值路径已随该决定移除）。
 - **SPA（`ssr: false`）**：面向终端交互与 localStorage；`app.head` 里的静态 meta / JSON-LD /
   `<noscript>` 兜底确实会出现在产物 HTML 外壳里（已实测），所以没有为了 SEO 上 SSR 的必要。
 - 云端只按**类型**限额（见上），没有按用户的总容量配额；账号注销已有（`user delete`），
