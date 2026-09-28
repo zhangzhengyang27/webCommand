@@ -13,8 +13,13 @@ function assertNewPassword(password: unknown): asserts password is string {
   if (message) throw new BizError(ERROR_CODE.PARAMS, message)
 }
 
-// 历史密码加盐（仅兼容旧用户）
-const SALT = 'coder_yupi'
+/**
+ * 前身工程（YuIndex）遗留的 MD5 口令盐值，**不可修改**：
+ * 老用户库里存的是 md5(密码 + 该盐)，改值会让这批账号全部无法登录。
+ * 新注册与改密一律走 bcrypt，校验通过后 verifyCredentials 会自动把哈希升级为 bcrypt，
+ * 等存量 bcrypt 覆盖全部用户后（user.password 不再以非 $2 开头）这段兼容逻辑可整体删除。
+ */
+const LEGACY_MD5_SALT = 'coder_yupi'
 const BCRYPT_ROUNDS = 10
 
 function isBcrypt(hash?: string) {
@@ -24,7 +29,7 @@ function isBcrypt(hash?: string) {
 /** 校验密码：优先 bcrypt，兼容历史 MD5 */
 async function verifyPassword(raw: string, hashed: string): Promise<boolean> {
   if (isBcrypt(hashed)) return bcrypt.compare(raw, hashed)
-  return hashed === md5(raw + SALT)
+  return hashed === md5(raw + LEGACY_MD5_SALT)
 }
 
 /** 注册，返回新用户 id */
