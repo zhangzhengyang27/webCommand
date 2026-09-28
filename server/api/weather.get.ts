@@ -2,7 +2,7 @@ import { proxyLimiter } from '../utils/rateLimit'
 import { httpGetText } from '../utils/httpClient'
 import { bizHandler, BizError, ERROR_CODE } from '../utils/response'
 
-// 天气代理（解决 wttr.in 的 CORS），对齐原 GET /api/weather
+// 天气代理（解决 wttr.in 的 CORS）
 export default bizHandler(async (event) => {
   if (proxyLimiter.hit(event))
     throw new BizError(ERROR_CODE.RATE_LIMIT, '操作过于频繁，请稍后再试', 429)

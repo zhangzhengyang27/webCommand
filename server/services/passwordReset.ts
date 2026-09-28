@@ -3,7 +3,6 @@ import { BizError, ERROR_CODE } from '../utils/response'
 
 /**
  * 找回密码验证码（内存存储，进程重启失效，单实例足够；多实例应改 Redis）。
- * 对齐原 service/passwordResetService.js。
  */
 const CODE_TTL = 10 * 60 * 1000
 const MAX_ATTEMPTS = 5

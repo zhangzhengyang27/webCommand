@@ -8,7 +8,7 @@ interface IpSource {
   pick: (d: unknown) => string
 }
 
-// 客户端公网 IP 查询（多源容错），对齐原 GET /api/ip
+// 客户端公网 IP 查询（多源容错）
 export default bizHandler(async (event) => {
   if (proxyLimiter.hit(event))
     throw new BizError(ERROR_CODE.RATE_LIMIT, '操作过于频繁，请稍后再试', 429)

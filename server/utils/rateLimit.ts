@@ -31,7 +31,7 @@ function recordHit(map: Map<string, number[]>, key: string, windowMs: number): n
 
 /**
  * 获取真实客户端 IP；仅当 TRUST_PROXY=true 时信任 x-forwarded-for，
- * 防止伪造该头绕过限流（对齐原 getClientIp）。
+ * 防止伪造该头绕过限流。
  */
 export function getClientIp(event: H3Event): string {
   const cfg = useRuntimeConfig(event)
@@ -44,7 +44,7 @@ export function getClientIp(event: H3Event): string {
 }
 
 /**
- * 创建按 IP 限流的内存限流器（对齐原 createRateLimiter）。
+ * 创建按 IP 限流的内存限流器。
  */
 export function createRateLimiter(windowMs: number, max: number): RateLimiter {
   const map = new Map<string, number[]>()

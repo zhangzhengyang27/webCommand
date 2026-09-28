@@ -2,7 +2,7 @@ import { proxyLimiter } from '../utils/rateLimit'
 import { httpGetBuffer } from '../utils/httpClient'
 import { bizHandler, BizError, ERROR_CODE } from '../utils/response'
 
-// 股票行情（新浪，需 Referer，GBK 解码），对齐原 GET /api/stock
+// 股票行情（新浪，需 Referer，GBK 解码）
 export default bizHandler(async (event) => {
   if (proxyLimiter.hit(event))
     throw new BizError(ERROR_CODE.RATE_LIMIT, '操作过于频繁，请稍后再试', 429)

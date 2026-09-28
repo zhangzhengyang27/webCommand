@@ -1,5 +1,5 @@
 /**
- * 服务端出站 HTTP 助手（替代原 index.js 中基于 https 的 httpsGet*）。
+ * 服务端出站 HTTP 助手。
  * 使用 Node 全局 fetch：自动跟随重定向、8s 超时、状态码校验。
  */
 

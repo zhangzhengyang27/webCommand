@@ -13,7 +13,6 @@ let model: ModelStatic<Model<UserDataAttributes>> | null = null
 
 /**
  * 用户数据云端同步表（待办 / 空间等），以 (userId,type) 为唯一键。
- * 对齐原 model/userData.js。
  */
 export function UserDataModel(): ModelStatic<Model<UserDataAttributes>> {
   if (model) return model

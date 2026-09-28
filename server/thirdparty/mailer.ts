@@ -2,7 +2,7 @@ import nodemailer, { type Transporter } from 'nodemailer'
 import { setting } from '../utils/appConfig'
 
 /**
- * SMTP 邮件发送（对齐原 thirdpart/mailer.js）。
+ * SMTP 邮件发送。
  * 取值走 setting()：运行期环境变量优先（NUXT_SMTP_* 或裸名 SMTP_*），构建期默认值仅作兜底。
  */
 let cached: Transporter | null = null

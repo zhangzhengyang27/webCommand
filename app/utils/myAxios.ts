@@ -17,7 +17,7 @@ const http = axios.create({
 
 http.defaults.withCredentials = true
 
-// 响应拦截器：直接返回 response.data（对齐原 request.js）
+// 响应拦截器：直接返回 response.data
 http.interceptors.response.use(
   (response) => response.data,
   (error) => {

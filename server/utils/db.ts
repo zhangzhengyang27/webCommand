@@ -4,7 +4,7 @@ import { resolveDbConfig } from './appConfig'
 let sequelize: Sequelize | null = null
 
 /**
- * Sequelize 单例（对齐原 server/db.js）。
+ * Sequelize 单例。
  * 懒加载，避免在 Nitro 运行时配置就绪前实例化。
  */
 export function useDb(): Sequelize {

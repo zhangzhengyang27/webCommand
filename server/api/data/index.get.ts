@@ -3,7 +3,7 @@ import { bizHandler, BizError, ERROR_CODE } from '../../utils/response'
 import { dataLimiter } from '../../utils/rateLimit'
 import { checkDataRead } from '../../utils/dataAccess'
 
-// 加载用户云端数据（待办 / 空间等），对齐原 GET /api/data
+// 加载用户云端数据（待办 / 空间等）
 export default bizHandler(async (event) => {
   if (dataLimiter.hit(event))
     throw new BizError(ERROR_CODE.RATE_LIMIT, '同步过于频繁，请稍后再试', 429)

@@ -1,7 +1,7 @@
 import type { EventHandler, H3Event } from 'h3'
 
 /**
- * 业务异常：对齐原 server/exception 的 MyError(code, message)
+ * 业务异常：携带业务码与 HTTP 状态码
  */
 export class BizError extends Error {
   code: number
@@ -14,7 +14,7 @@ export class BizError extends Error {
   }
 }
 
-// 错误码（对齐原 exception/errorCode.js）
+// 业务错误码：与 HTTP 状态码解耦
 export const ERROR_CODE = {
   PARAMS: 40000,
   NO_AUTH: 40100,
@@ -35,7 +35,7 @@ export function fail(code: number, message: string, data: unknown = null) {
 
 /**
  * 包装业务 handler，统一输出 { code, data, message }。
- * 对齐原 Express setRoute：业务错误 HTTP 状态仍为 200，错误码放在 body.code。
+ * 业务错误仍以 HTTP 200 返回，错误码放在 body.code（前端按 code 分支处理）。
  */
 export function bizHandler(fn: (event: H3Event) => unknown | Promise<unknown>): EventHandler {
   return defineEventHandler(async (event) => {

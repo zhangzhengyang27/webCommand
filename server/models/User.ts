@@ -17,7 +17,7 @@ export type SafeUser = Omit<UserAttributes, 'password'>
 
 let model: ModelStatic<Model<UserAttributes>> | null = null
 
-/** 用户表模型（懒加载单例，对齐原 model/user.js） */
+/** 用户表模型（懒加载单例） */
 export function UserModel(): ModelStatic<Model<UserAttributes>> {
   if (model) return model
   model = useDb().define(

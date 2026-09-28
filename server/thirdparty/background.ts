@@ -3,7 +3,7 @@ import axios from 'axios'
 const ALLOWED_TYPES = ['dongman', 'fengjing', 'meizi', 'suiji']
 
 /**
- * 随机获取背景图 URL（对齐原 thirdpart/backgroundApi.js）。
+ * 随机获取背景图 URL。
  */
 export async function getRandomBackground(type = 'dongman'): Promise<string | null> {
   const safeType = ALLOWED_TYPES.includes(type) ? type : 'dongman'
